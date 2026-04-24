@@ -7,15 +7,19 @@ import '../services/socket_service.dart';
 
 class ChatProvider extends ChangeNotifier {
   List<Chat> _chats = [];
+  List<User> _users = [];
   final Map<String, List<Message>> _messages = {};
   final Map<String, bool> _typingStatus = {};
   bool _isLoading = false;
+  bool _isLoadingUsers = false;
   String? _error;
 
   List<Chat> get chats => List.unmodifiable(_chats);
+  List<User> get users => List.unmodifiable(_users);
   Map<String, List<Message>> get messages => Map.unmodifiable(_messages);
   Map<String, bool> get typingStatus => Map.unmodifiable(_typingStatus);
   bool get isLoading => _isLoading;
+  bool get isLoadingUsers => _isLoadingUsers;
   String? get error => _error;
 
   int get totalUnreadCount =>
@@ -69,6 +73,24 @@ class ChatProvider extends ChangeNotifier {
       }
     }
     if (changed) notifyListeners();
+  }
+
+  Future<void> loadUsers() async {
+    _isLoadingUsers = true;
+    notifyListeners();
+    try {
+      final data = await _api.get('/users');
+      final list = data is List ? data : (data['users'] as List<dynamic>? ?? []);
+      _users = list
+          .whereType<Map<String, dynamic>>()
+          .map((u) => User.fromJson(u))
+          .toList();
+    } catch (e) {
+      // silently fail — users list is best-effort
+    } finally {
+      _isLoadingUsers = false;
+      notifyListeners();
+    }
   }
 
   Future<void> loadChats() async {

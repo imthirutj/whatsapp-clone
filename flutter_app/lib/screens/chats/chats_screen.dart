@@ -3,8 +3,10 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../models/chat.dart';
+import '../../models/user.dart';
 import '../../constants.dart';
 import '../../widgets/chat_list_item.dart';
+import '../../widgets/avatar_widget.dart';
 import 'chat_detail_screen.dart';
 
 class ChatsScreen extends StatefulWidget {
@@ -196,42 +198,169 @@ class _ChatsScreenState extends State<ChatsScreen> {
   }
 
   void _showNewChatDialog(BuildContext context) {
-    final controller = TextEditingController();
-    showDialog(
+    final chatProvider = context.read<ChatProvider>();
+    final authProvider = context.read<AuthProvider>();
+    chatProvider.loadUsers();
+
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('New Chat'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'User ID or Phone',
-            hintText: 'Enter participant ID',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              final id = controller.text.trim();
-              if (id.isEmpty) return;
-              Navigator.pop(ctx);
-              final chatProvider = context.read<ChatProvider>();
-              final chat = await chatProvider.createChat(id);
-              if (chat != null && context.mounted) {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => ChatDetailScreen(chat: chat),
-                  ),
-                );
-              }
-            },
-            child: const Text('Start Chat'),
-          ),
-        ],
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
+      builder: (ctx) => _ContactPickerSheet(
+        onSelectUser: (user) async {
+          Navigator.pop(ctx);
+          final chat = await chatProvider.createChat(user.id);
+          if (chat != null && context.mounted) {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => ChatDetailScreen(chat: chat),
+              ),
+            );
+          }
+        },
+      ),
+    );
+  }
+}
+
+class _ContactPickerSheet extends StatefulWidget {
+  final void Function(User user) onSelectUser;
+  const _ContactPickerSheet({required this.onSelectUser});
+
+  @override
+  State<_ContactPickerSheet> createState() => _ContactPickerSheetState();
+}
+
+class _ContactPickerSheetState extends State<_ContactPickerSheet> {
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.75,
+      maxChildSize: 0.95,
+      minChildSize: 0.5,
+      expand: false,
+      builder: (_, scrollController) {
+        return Consumer<ChatProvider>(
+          builder: (context, chatProvider, _) {
+            final filtered = chatProvider.users.where((u) {
+              if (_query.isEmpty) return true;
+              final q = _query.toLowerCase();
+              return u.name.toLowerCase().contains(q) ||
+                  (u.phone?.contains(q) ?? false) ||
+                  u.email.toLowerCase().contains(q);
+            }).toList();
+
+            return Column(
+              children: [
+                // Handle
+                Container(
+                  margin: const EdgeInsets.only(top: 10, bottom: 6),
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                // Title
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text('New Chat',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+                // Search
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  child: TextField(
+                    controller: _searchController,
+                    autofocus: true,
+                    decoration: InputDecoration(
+                      hintText: 'Search by name, phone or email',
+                      prefixIcon: const Icon(Icons.search, color: kPrimary),
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(28),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                    ),
+                    onChanged: (v) => setState(() => _query = v),
+                  ),
+                ),
+                const Divider(height: 1),
+                // List
+                Expanded(
+                  child: chatProvider.isLoadingUsers
+                      ? const Center(child: CircularProgressIndicator(color: kPrimary))
+                      : filtered.isEmpty
+                          ? Center(
+                              child: Text(
+                                _query.isEmpty ? 'No contacts found' : 'No results for "$_query"',
+                                style: TextStyle(color: Colors.grey.shade500),
+                              ),
+                            )
+                          : ListView.builder(
+                              controller: scrollController,
+                              itemCount: filtered.length,
+                              itemBuilder: (context, index) {
+                                final user = filtered[index];
+                                return ListTile(
+                                  leading: AvatarWidget(
+                                    user: user,
+                                    size: 48,
+                                    showOnlineIndicator: true,
+                                  ),
+                                  title: Text(
+                                    user.name,
+                                    style: const TextStyle(fontWeight: FontWeight.w600),
+                                  ),
+                                  subtitle: Text(
+                                    user.phone ?? user.email,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                  trailing: user.online
+                                      ? Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 8, vertical: 3),
+                                          decoration: BoxDecoration(
+                                            color: kPrimary.withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          child: const Text('online',
+                                              style: TextStyle(
+                                                  fontSize: 11,
+                                                  color: kPrimary,
+                                                  fontWeight: FontWeight.w500)),
+                                        )
+                                      : null,
+                                  onTap: () => widget.onSelectUser(user),
+                                );
+                              },
+                            ),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }
