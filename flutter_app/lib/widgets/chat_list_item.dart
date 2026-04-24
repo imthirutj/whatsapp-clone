@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../models/chat.dart';
-import '../models/user.dart';
+import '../widgets/avatar_widget.dart';
 import '../utils/time_utils.dart';
-import 'avatar_widget.dart';
+import '../constants.dart';
 
 class ChatListItem extends StatelessWidget {
   final Chat chat;
@@ -18,112 +19,97 @@ class ChatListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final displayName = chat.displayName(currentUserId);
     final otherUser = chat.otherUser(currentUserId);
-    final lastMsg = chat.lastMessage;
-    final unread = chat.unreadCount;
+    final displayName = chat.displayName(currentUserId);
+    final lastMessage = chat.lastMessage;
+    final unreadCount = chat.unreadCount;
 
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Row(
           children: [
             // Avatar
             if (otherUser != null)
               AvatarWidget(
                 user: otherUser,
-                size: 52,
+                size: 50,
                 showOnlineIndicator: true,
               )
             else
-              CircleAvatar(
-                radius: 26,
-                backgroundColor: Colors.grey.shade300,
-                child: const Icon(Icons.group, color: Colors.white),
+              const CircleAvatar(
+                radius: 25,
+                child: Icon(Icons.group),
               ),
             const SizedBox(width: 14),
-            // Content
+            // Chat info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Name + Time row
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
                         child: Text(
                           displayName,
-                          style: TextStyle(
+                          style: GoogleFonts.inter(
                             fontSize: 16,
-                            fontWeight: unread > 0
-                                ? FontWeight.w700
-                                : FontWeight.w600,
-                            color: const Color(0xFF1A1A1A),
+                            fontWeight: FontWeight.w500,
+                            color: kOnSurface,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (lastMsg != null)
+                      if (lastMessage != null)
                         Text(
-                          TimeUtils.formatChatTime(lastMsg.createdAt),
-                          style: TextStyle(
+                          TimeUtils.formatChatTime(lastMessage.createdAt),
+                          style: GoogleFonts.inter(
                             fontSize: 12,
-                            color: unread > 0
-                                ? const Color(0xFF006A4E)
-                                : Colors.grey.shade500,
-                            fontWeight: unread > 0
-                                ? FontWeight.w600
-                                : FontWeight.normal,
+                            fontWeight: FontWeight.w400,
+                            color: unreadCount > 0 ? kPrimary : kOnSurfaceVariant,
                           ),
                         ),
                     ],
                   ),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 4),
+                  // Message preview + badge row
                   Row(
                     children: [
                       Expanded(
                         child: Text(
-                          lastMsg?.text ?? 'No messages yet',
-                          style: TextStyle(
+                          lastMessage?.text ?? 'No messages yet',
+                          style: GoogleFonts.inter(
                             fontSize: 14,
-                            color: unread > 0
-                                ? const Color(0xFF1A1A1A)
-                                : Colors.grey.shade600,
-                            fontWeight: unread > 0
-                                ? FontWeight.w500
-                                : FontWeight.normal,
+                            fontWeight: FontWeight.w400,
+                            color: kOnSurfaceVariant,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (unread > 0)
+                      if (unreadCount > 0) ...[
+                        const SizedBox(width: 8),
                         Container(
-                          margin: const EdgeInsets.only(left: 8),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
+                          width: 22,
+                          height: 22,
                           decoration: const BoxDecoration(
-                            color: Color(0xFF006A4E),
+                            color: kPrimary,
                             shape: BoxShape.circle,
                           ),
-                          constraints: const BoxConstraints(
-                            minWidth: 22,
-                            minHeight: 22,
-                          ),
+                          alignment: Alignment.center,
                           child: Text(
-                            unread > 99 ? '99+' : '$unread',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
+                            unreadCount.toString(),
+                            style: GoogleFonts.inter(
                               color: Colors.white,
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
+                      ],
                     ],
                   ),
                 ],

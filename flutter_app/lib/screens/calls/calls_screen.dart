@@ -131,8 +131,9 @@ class _CallsScreenState extends State<CallsScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         heroTag: 'calls_fab',
+        backgroundColor: kAccentGreen,
         onPressed: () {},
-        child: const Icon(Icons.add_call),
+        child: const Icon(Icons.add_call, color: Colors.white),
       ),
     );
   }

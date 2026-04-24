@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Messaging App – All Screens</title>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4 landscape; margin: 1cm; }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { background: #f5f5f5; font-family: 'Roboto', sans-serif; padding: 24px; }
+
+  .page-title {
+    font-family: 'Google Sans', sans-serif;
+    font-size: 20px;
+    font-weight: 500;
+    color: #1C1B1F;
+    margin-bottom: 20px;
+    text-align: center;
+    letter-spacing: 0.3px;
+  }
+
+  .screens-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+    align-items: start;
+  }
+
+  .screen-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    break-inside: avoid;
+  }
+
+  .screen-label {
+    font-family: 'Google Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    color: #49454F;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+
+  /* Phone frame */
+  .phone {
+    width: 100%;
+    aspect-ratio: 9/18;
+    border-radius: 28px;
+    overflow: hidden;
+    background: #fff;
+    border: 6px solid #1C1B1F;
+    position: relative;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  }
+
+  /* Notch */
+  .phone::before {
+    content: '';
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #1C1B1F;
+    z-index: 10;
+  }
+
+  .phone-inner {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Status bar */
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px 4px;
+    font-size: 9px;
+    font-weight: 600;
+    color: #1C1B1F;
+    background: #fff;
+    min-height: 30px;
+  }
+
+  /* Top app bar */
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    background: #fff;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .top-bar-title {
+    font-family: 'Google Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    color: #1C1B1F;
+  }
+  .top-bar-icons { display: flex; gap: 6px; }
+  .icon-dot { width: 14px; height: 14px; border-radius: 50%; background: #49454F22; }
+
+  /* Search bar */
+  .search-bar {
+    margin: 6px 8px;
+    background: #F2F2F2;
+    border-radius: 20px;
+    padding: 6px 12px;
+    font-size: 10px;
+    color: #49454F;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* Chat list */
+  .chat-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-bottom: 1px solid #f5f5f5;
+  }
+  .avatar {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 500; color: #fff;
+    font-family: 'Google Sans', sans-serif;
+    flex-shrink: 0;
+  }
+  .chat-info { flex: 1; min-width: 0; }
+  .chat-name { font-size: 10px; font-weight: 500; color: #1C1B1F; font-family: 'Google Sans', sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chat-preview { font-size: 8.5px; color: #49454F; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chat-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0; }
+  .chat-time { font-size: 8px; color: #49454F; }
+  .badge { background: #006A4E; color: #fff; font-size: 7px; font-weight: 600; border-radius: 8px; padding: 1px 4px; min-width: 14px; text-align: center; }
+
+  /* Bottom nav */
+  .bottom-nav {
+    display: flex;
+    border-top: 1px solid #f0f0f0;
+    background: #fff;
+    margin-top: auto;
+  }
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 2px 4px;
+  }
+  .nav-pill {
+    width: 36px; height: 18px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .nav-pill.active { background: #E8DEF8; }
+  .nav-dot { width: 10px; height: 10px; border-radius: 50%; background: #49454F44; }
+  .nav-dot.active { background: #625B71; }
+  .nav-label { font-size: 7px; color: #49454F; font-family: 'Roboto', sans-serif; }
+  .nav-label.active { color: #625B71; font-weight: 500; }
+
+  /* Chat screen */
+  .chat-header {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 8px;
+    background: #fff;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .back-arrow { width: 12px; height: 12px; border-left: 2px solid #006A4E; border-bottom: 2px solid #006A4E; transform: rotate(45deg); }
+  .chat-bg { flex: 1; overflow: hidden; padding: 8px; background: #ECE5DD; display: flex; flex-direction: column; gap: 5px; }
+  .bubble { max-width: 75%; padding: 5px 8px; border-radius: 12px; font-size: 9px; line-height: 1.4; }
+  .bubble.me { align-self: flex-end; background: #006A4E; color: #fff; border-bottom-right-radius: 3px; }
+  .bubble.them { align-self: flex-start; background: #fff; color: #1C1B1F; border-bottom-left-radius: 3px; }
+  .msg-input {
+    display: flex; align-items: center; gap: 5px;
+    padding: 5px 8px 8px;
+    background: #fff;
+  }
+  .input-box {
+    flex: 1; background: #F2F2F2; border-radius: 20px;
+    padding: 5px 10px; font-size: 9px; color: #49454F;
+  }
+  .send-btn { width: 24px; height: 24px; border-radius: 50%; background: #006A4E; }
+
+  /* Status ring */
+  .status-ring {
+    width: 34px; height: 34px; border-radius: 50%;
+    padding: 2px;
+    background: conic-gradient(#006A4E 0%, #006A4E 65%, #E8F5E9 65%);
+  }
+  .status-ring-inner {
+    width: 100%; height: 100%; border-radius: 50%;
+    background: #fff; padding: 2px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .section-label {
+    padding: 6px 10px 3px;
+    font-size: 8px; font-weight: 500; color: #49454F;
+    text-transform: uppercase; letter-spacing: 0.6px;
+  }
+
+  /* FAB */
+  .fab {
+    position: absolute; bottom: 40px; right: 10px;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #006A4E;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  }
+  .fab-plus { color: #fff; font-size: 18px; line-height: 1; }
+
+  /* Calls */
+  .call-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 10px; border-bottom: 1px solid #f5f5f5;
+  }
+  .call-info { flex: 1; }
+  .call-name { font-size: 10px; font-weight: 500; color: #1C1B1F; font-family: 'Google Sans', sans-serif; }
+  .call-meta { font-size: 8px; color: #49454F; margin-top: 2px; }
+  .call-missed .call-name { color: #B3261E; }
+
+  /* Settings */
+  .setting-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; border-bottom: 1px solid #f5f5f5;
+  }
+  .setting-icon { width: 24px; height: 24px; border-radius: 8px; background: #006A4E22; }
+  .setting-label { font-size: 10px; color: #1C1B1F; font-family: 'Roboto', sans-serif; }
+  .setting-sub { font-size: 8px; color: #49454F; margin-top: 1px; }
+  .chevron { width: 6px; height: 6px; border-right: 1.5px solid #ccc; border-bottom: 1.5px solid #ccc; transform: rotate(-45deg); margin-left: auto; }
+</style>
+</head>
+<body>
+<div class="page-title">Messaging App — All Screens</div>
+<div class="screens-grid">
+
+  <!-- SCREEN 1: Chats -->
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="status-bar"><span>9:30</span><span>▲▼ 4G</span></div>
+        <div class="top-bar">
+          <span class="top-bar-title">WhatsApp</span>
+          <div class="top-bar-icons"><div class="icon-dot"></div><div class="icon-dot"></div><div class="icon-dot"></div></div>
+        </div>
+        <div class="search-bar">🔍 Ask Meta AI or Search</div>
+        <!-- Chat items -->
+        <div class="chat-item">
+          <div class="avatar" style="background:#E53935">AJ</div>
+          <div class="chat-info">
+            <div class="chat-name">Alex Johnson</div>
+            <div class="chat-preview">Around 7am. And YES the game…</div>
+          </div>
+          <div class="chat-meta"><span class="chat-time">9:10 AM</span></div>
+        </div>
+        <div class="chat-item">
+          <div class="avatar" style="background:#43A047">SK</div>
+          <div class="chat-info">
+            <div class="chat-name">Sarah Kim</div>
+            <div class="chat-preview">Got it, thanks for the heads up!</div>
+          </div>
+          <div class="chat-meta"><span class="chat-time" style="color:#006A4E">10:05 AM</span><span class="badge">2</span></div>
+        </div>
+        <div class="chat-item">
+          <div class="avatar" style="background:#1E88E5">JW</div>
+          <div class="chat-info">
+            <div class="chat-name">James Wilson</div>
+            <div class="chat-preview">I'm so in! 🏔️ Which trail?</div>
+          </div>
+          <div class="chat-meta"><span class="chat-time" style="color:#006A4E">10:20 AM</span><span class="badge">1</span></div>
+        </div>
+        <div class="chat-item">
+          <div class="avatar" style="background:#F4511E">DT</div>
+          <div class="chat-info">
+            <div class="chat-name">Dev Team</div>
+            <div class="chat-preview">Standup is canceled tomorrow</div>
+          </div>
+          <div class="chat-meta"><span class="chat-time" style="color:#006A4E">4:45 PM</span><span class="badge">3</span></div>
+        </div>
+        <div class="chat-item">
+          <div class="avatar" style="background:#00897B">MG</div>
+          <div class="chat-info">
+            <div class="chat-name">Maria Garcia</div>
+            <div class="chat-preview">Got it, thanks! 🙏</div>
+          </div>
+          <div class="chat-meta"><span class="chat-time">2:30 PM</span></div>
+        </div>
+        <div class="chat-item">
+          <div class="avatar" style="background:#8E24AA">LR</div>
+          <div class="chat-info">
+            <div class="chat-name">Luca Romano</div>
+            <div class="chat-preview">I'll show you all the best spots</div>
+          </div>
+          <div class="chat-meta"><span class="chat-time">11:15 AM</span></div>
+        </div>
+        <div class="chat-item">
+          <div class="avatar" style="background:#039BE5">TC</div>
+          <div class="chat-info">
+            <div class="chat-name">Tom Chen</div>
+            <div class="chat-preview">We should celebrate properly soon</div>
+          </div>
+          <div class="chat-meta"><span class="chat-time">8:30 AM</span></div>
+        </div>
+        <div style="position:relative;flex:1;">
+          <div class="fab"><span class="fab-plus">+</span></div>
+        </div>
+        <div class="bottom-nav">
+          <div class="nav-item"><div class="nav-pill active"><div class="nav-dot active"></div></div><span class="nav-label active">Chats</span></div>
+          <div class="nav-item"><div class="nav-pill"><div class="nav-dot"></div></div><span class="nav-label">Updates</span></div>
+          <div class="nav-item"><div class="nav-pill"><div class="nav-dot"></div></div><span class="nav-label">Communities</span></div>
+          <div class="nav-item"><div class="nav-pill"><div class="nav-dot"></div></div><span class="nav-label">Calls</span></div>
+        </div>
+      </div>
+    </div>
+    <span class="screen-label">Chats</span>
+  </div>
+
+  <!-- SCREEN 2: Chat Open -->
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="status-bar"><span>9:30</span><span>▲▼ 4G</span></div>
+        <div class="chat-header">
+          <div class="back-arrow"></div>
+          <div class="avatar" style="background:#E53935;width:22px;height:22px;font-size:7px;">AJ</div>
+          <div style="flex:1;">
+            <div style="font-size:10px;font-weight:500;color:#1C1B1F;font-family:'Google Sans',sans-serif;">Alex Johnson</div>
+            <div style="font-size:8px;color:#006A4E;">Active now</div>
+          </div>
+          <div style="display:flex;gap:5px;">
+            <div class="icon-dot"></div><div class="icon-dot"></div><div class="icon-dot"></div>
+          </div>
+        </div>
+        <div class="chat-bg">
+          <div style="text-align:center;margin-bottom:4px;"><span style="background:rgba(255,255,255,0.7);border-radius:6px;padding:2px 8px;font-size:8px;color:#5d4037;">Today</span></div>
+          <div class="bubble them">Hey! How's it going? 😊</div>
+          <div class="bubble me">Pretty good! Just got back from the gym</div>
+          <div class="bubble them">Nice! I've been meaning to start going again 💪</div>
+          <div class="bubble me">You should join me sometime!</div>
+          <div class="bubble them">Definitely! What time do you go?</div>
+          <div class="bubble them">Also did you see the game? 🏀</div>
+          <div class="bubble me">Around 7am. And YES the game was insane!!!</div>
+        </div>
+        <div class="msg-input">
+          <div class="input-box">Message</div>
+          <div class="send-btn"></div>
+        </div>
+      </div>
+    </div>
+    <span class="screen-label">Chat</span>
+  </div>
+
+  <!-- SCREEN 3: Updates/Status -->
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="status-bar"><span>9:30</span><span>▲▼ 4G</span></div>
+        <div class="top-bar">
+          <span class="top-bar-title">Updates</span>
+          <div class="top-bar-icons"><div class="icon-dot"></div><div class="icon-dot"></div></div>
+        </div>
+        <!-- My status -->
+        <div class="chat-item">
+          <div class="avatar" style="background:#006A4E;position:relative;">ME
+            <div style="position:absolute;bottom:-2px;right:-2px;width:12px;height:12px;border-radius:50%;background:#006A4E;border:1.5px solid #fff;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;">+</div>
+          </div>
+          <div class="chat-info">
+            <div class="chat-name">My status</div>
+            <div class="chat-preview">Add to my status</div>
+          </div>
+        </div>
+        <div class="section-label">Recent updates</div>
+        <div class="chat-item">
+          <div class="status-ring"><div class="status-ring-inner"><div class="avatar" style="background:#00897B;width:26px;height:26px;font-size:8px;">MG</div></div></div>
+          <div class="chat-info">
+            <div class="chat-name">Maria Garcia</div>
+            <div class="chat-preview">2 hours ago</div>
+          </div>
+        </div>
+        <div class="chat-item">
+          <div class="status-ring" style="background:conic-gradient(#ccc 0%,#ccc 100%)"><div class="status-ring-inner"><div class="avatar" style="background:#1E88E5;width:26px;height:26px;font-size:8px;">JW</div></div></div>
+          <div class="chat-info">
+            <div class="chat-name">James Wilson</div>
+            <div class="chat-preview">5 hours ago</div>
+          </div>
+        </div>
+        <div class="chat-item">
+          <div class="status-ring"><div class="status-ring-inner"><div class="avatar" style="background:#43A047;width:26px;height:26px;font-size:8px;">SK</div></div></div>
+          <div class="chat-info">
+            <div class="chat-name">Sarah Kim</div>
+            <div class="chat-preview">Just now</div>
+          </div>
+        </div>
+        <div class="section-label">Channels</div>
+        <div style="padding:12px;text-align:center;">
+          <div style="font-size:22px;margin-bottom:5px;">📡</div>
+          <div style="font-size:9px;font-weight:500;color:#1C1B1F;font-family:'Google Sans',sans-serif;margin-bottom:3px;">Stay updated on topics that matter</div>
+          <div style="font-size:8px;color:#49454F;margin-bottom:8px;">Find channels to follow</div>
+          <div style="background:#006A4E;color:#fff;border-radius:12px;padding:5px 12px;font-size:8px;font-family:'Google Sans',sans-serif;display:inline-block;">Explore channels</div>
+        </div>
+        <div style="flex:1;"></div>
+        <div class="bottom-nav">
+          <div class="nav-item"><div class="nav-pill"><div class="nav-dot"></div></div><span class="nav-label">Chats</span></div>
+          <div class="nav-item"><div class="nav-pill active"><div class="nav-dot active"></div></div><span class="nav-label active">Updates</span></div>
+          <div class="nav-item"><div class="nav-pill"><div class="nav-dot"></div></div><span class="nav-label">Communities</span></div>
+          <div class="nav-item"><div class="nav-pill"><div class="nav-dot"></div></div><span class="nav-label">Calls</span></div>
+        </div>
+      </div>
+    </div>
+    <span class="screen-label">Updates</span>
+  </div>
+
+  <!-- SCREEN 4: Calls -->
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="status-bar"><span>9:30</span><span>▲▼ 4G</span></div>
+        <div class="top-bar">
+          <span class="top-bar-title">Calls</span>
+          <div class="top-bar-icons"><div class="icon-dot"></div><div class="icon-dot"></div></div>
+        </div>
+        <div class="section-label">Recent</div>
+        <div class="call-item">
+          <div class="avatar" style="background:#E53935;width:28px;height:28px;font-size:8px;">AJ</div>
+          <div class="call-info">
+            <div class="call-name">Alex Johnson</div>
+            <div class="call-meta">↙ Incoming · Today, 8:45 AM · 4 min</div>
+          </div>
+          <div class="icon-dot"></div>
+        </div>
+        <div class="call-item">
+          <div class="avatar" style="background:#1E88E5;width:28px;height:28px;font-size:8px;">JW</div>
+          <div class="call-info">
+            <div class="call-name">James Wilson</div>
+            <div class="call-meta">↗ Outgoing · Today, 7:30 AM · 12 min</div>
+          </div>
+          <div class="icon-dot"></div>
+        </div>
+        <div class="call-item call-missed">
+          <div class="avatar" style="background:#F4511E;width:28px;height:28px;font-size:8px;">DT</div>
+          <div class="call-info">
+            <div class="call-name">Dev Team</div>
+            <div class="call-meta" style="color:#B3261E;">Missed · Yesterday, 9:15 PM</div>
+          </div>
+          <div class="icon-dot"></div>
+        </div>
+        <div class="call-item">
+          <div class="avatar" style="background:#00897B;width:28px;height:28px;font-size:8px;">MG</div>
+          <div class="call-info">
+            <div class="call-name">Maria Garcia</div>
+            <div class="call-meta">↗ Outgoing · Yesterday · 2 min</div>
+          </div>
+          <div class="icon-dot"></div>
+        </div>
+        <div class="call-item">
+          <div class="avatar" style="background:#8E24AA;width:28px;height:28px;font-size:8px;">LR</div>
+          <div class="call-info">
+            <div class="call-name">Luca Romano</div>
+            <div class="call-meta">↙ Incoming · Mon · 28 min</div>
+          </div>
+          <div class="icon-dot"></div>
+        </div>
+        <div class="call-item call-missed">
+          <div class="avatar" style="background:#039BE5;width:28px;height:28px;font-size:8px;">TC</div>
+          <div class="call-info">
+            <div class="call-name">Tom Chen</div>
+            <div class="call-meta" style="color:#B3261E;">Missed video · Mon</div>
+          </div>
+          <div class="icon-dot"></div>
+        </div>
+        <div style="flex:1;"></div>
+        <div class="bottom-nav">
+          <div class="nav-item"><div class="nav-pill"><div class="nav-dot"></div></div><span class="nav-label">Chats</span></div>
+          <div class="nav-item"><div class="nav-pill"><div class="nav-dot"></div></div><span class="nav-label">Updates</span></div>
+          <div class="nav-item"><div class="nav-pill"><div class="nav-dot"></div></div><span class="nav-label">Communities</span></div>
+          <div class="nav-item"><div class="nav-pill active"><div class="nav-dot active"></div></div><span class="nav-label active">Calls</span></div>
+        </div>
+      </div>
+    </div>
+    <span class="screen-label">Calls</span>
+  </div>
+
+  <!-- SCREEN 5: Communities -->
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="status-bar"><span>9:30</span><span>▲▼ 4G</span></div>
+        <div class="top-bar">
+          <span class="top-bar-title">Communities</span>
+          <div class="top-bar-icons"><div class="icon-dot"></div></div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;text-align:center;">
+          <div style="font-size:48px;margin-bottom:12px;">🏘️</div>
+          <div style="font-family:'Google Sans',sans-serif;font-weight:500;font-size:11px;color:#1C1B1F;margin-bottom:6px;">Stay connected with a community</div>
+          <div style="font-size:9px;color:#49454F;margin-bottom:16px;line-height:1.5;">Communities bring groups together under one space. Create yours or find one to join.</div>
+          <div style="background:#006A4E;color:#fff;border-radius:12px;padding:7px 18px;font-size:9px;font-family:'Google Sans',sans-serif;">New community</div>
+        </div>
+        <div class="bottom-nav">
+          <div class="nav-item"><div class="nav-pill"><div class="nav-dot"></div></div><span class="nav-label">Chats</span></div>
+          <div class="nav-item"><div class="nav-pill"><div class="nav-dot"></div></div><span class="nav-label">Updates</span></div>
+          <div class="nav-item"><div class="nav-pill active"><div class="nav-dot active"></div></div><span class="nav-label active">Communities</span></div>
+          <div class="nav-item"><div class="nav-pill"><div class="nav-dot"></div></div><span class="nav-label">Calls</span></div>
+        </div>
+      </div>
+    </div>
+    <span class="screen-label">Communities</span>
+  </div>
+
+</div>
+
+<script>
+  window.addEventListener('load', function() {
+    document.fonts.ready.then(function() {
+      setTimeout(function() { window.print(); }, 500);
+    });
+  });
+</script>
+</body>
+</html>

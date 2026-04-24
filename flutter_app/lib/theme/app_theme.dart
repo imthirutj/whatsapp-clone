@@ -1,118 +1,85 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../constants.dart';
 
 class AppTheme {
   static ThemeData get lightTheme {
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: kPrimary,
-      brightness: Brightness.light,
-    );
-
     return ThemeData(
       useMaterial3: true,
-      colorScheme: colorScheme,
-      fontFamily: 'Roboto',
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: kPrimary,
+        primary: kPrimary,
+        surface: kSurface,
+        onSurface: kOnSurface,
+        surfaceContainerHighest: kSurfaceVariant,
+        onSurfaceVariant: kOnSurfaceVariant,
+      ),
+      scaffoldBackgroundColor: kSurface,
+      
+      // Using Inter for smooth, premium typography
+      textTheme: GoogleFonts.interTextTheme(),
+      
       appBarTheme: AppBarTheme(
-        backgroundColor: kPrimary,
-        foregroundColor: Colors.white,
+        backgroundColor: kSurface,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         centerTitle: false,
-        titleTextStyle: const TextStyle(
-          fontFamily: 'Roboto',
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
+        titleTextStyle: GoogleFonts.inter(
+          color: kOnSurface,
+          fontSize: 22,
+          fontWeight: FontWeight.w400,
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
-        actionsIconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: kOnSurface),
       ),
+      
+      // Bottom Navigation: NO pill indicator, transparent background
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: Colors.white,
-        indicatorColor: colorScheme.secondaryContainer,
+        backgroundColor: kSurface,
+        indicatorColor: Colors.transparent, // NO pill indicator — matches prototype
+        surfaceTintColor: Colors.transparent,
+        height: 64,
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return TextStyle(
-              fontSize: 12,
+            return GoogleFonts.inter(
+              fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: kPrimary,
+              color: kOnSurface,
             );
           }
-          return const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w400,
-            color: Colors.grey,
+          return GoogleFonts.inter(
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+            color: kOnSurfaceVariant,
           );
         }),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return const IconThemeData(color: kPrimary);
+            return const IconThemeData(color: kOnSurface, size: 26);
           }
-          return const IconThemeData(color: Colors.grey);
+          return const IconThemeData(color: kOnSurfaceVariant, size: 26);
         }),
       ),
+      
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         backgroundColor: kPrimary,
         foregroundColor: Colors.white,
+        elevation: 3,
+        shape: CircleBorder(),
       ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: Colors.grey.shade100,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
+      
+      searchBarTheme: SearchBarThemeData(
+        backgroundColor: WidgetStateProperty.all(kSurfaceVariant),
+        elevation: WidgetStateProperty.all(0),
+        hintStyle: WidgetStateProperty.all(
+          GoogleFonts.inter(color: kOnSurfaceVariant, fontSize: 14),
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: kPrimary, width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.red, width: 1),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.red, width: 2),
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      ),
-      filledButtonTheme: FilledButtonThemeData(
-        style: FilledButton.styleFrom(
-          backgroundColor: kPrimary,
-          foregroundColor: Colors.white,
-          minimumSize: const Size(double.infinity, 52),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            fontFamily: 'Roboto',
-          ),
+        textStyle: WidgetStateProperty.all(
+          GoogleFonts.inter(color: kOnSurface, fontSize: 15),
         ),
       ),
-      textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          foregroundColor: kPrimary,
-          textStyle: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            fontFamily: 'Roboto',
-          ),
-        ),
-      ),
-      cardTheme: CardThemeData(
-        elevation: 0,
-        color: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-      dividerTheme: const DividerThemeData(
-        color: Color(0xFFE0E0E0),
+      
+      dividerTheme: DividerThemeData(
+        color: Colors.grey.shade200,
         thickness: 0.5,
       ),
     );

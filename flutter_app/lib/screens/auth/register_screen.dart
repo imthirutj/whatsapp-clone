@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/chat_provider.dart';
+import '../../constants.dart';
 import '../home/home_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -71,193 +74,278 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF1A1A1A),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
       body: SafeArea(
         child: Consumer<AuthProvider>(
           builder: (context, auth, _) {
             return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
               child: Form(
                 key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Create Account',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1A1A1A),
+                    // Back button
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8, top: 8),
+                      child: IconButton(
+                        icon: const Icon(Icons.arrow_back, color: kPrimary, size: 24),
+                        onPressed: () => Navigator.of(context).pop(),
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Join WhatsApp Clone today',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                    const SizedBox(height: 40),
-                    // Name field
-                    TextFormField(
-                      controller: _nameController,
-                      keyboardType: TextInputType.name,
-                      textInputAction: TextInputAction.next,
-                      textCapitalization: TextCapitalization.words,
-                      decoration: const InputDecoration(
-                        labelText: 'Full Name',
-                        prefixIcon: Icon(Icons.person_outlined),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter your name';
-                        }
-                        if (value.trim().length < 2) {
-                          return 'Name must be at least 2 characters';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    // Username field
-                    TextFormField(
-                      controller: _usernameController,
-                      keyboardType: TextInputType.text,
-                      textInputAction: TextInputAction.next,
-                      autocorrect: false,
-                      decoration: const InputDecoration(
-                        labelText: 'Username',
-                        hintText: 'e.g. john_doe',
-                        prefixIcon: Icon(Icons.alternate_email),
-                        helperText: 'Others will find you by this username',
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please choose a username';
-                        }
-                        if (value.trim().length < 3) {
-                          return 'Username must be at least 3 characters';
-                        }
-                        if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(value.trim())) {
-                          return 'Only letters, numbers and underscores';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    // Phone field (optional)
-                    TextFormField(
-                      controller: _phoneController,
-                      keyboardType: TextInputType.phone,
-                      textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
-                        labelText: 'Phone (optional)',
-                        prefixIcon: Icon(Icons.phone_outlined),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    // Email field (optional)
-                    TextFormField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      textInputAction: TextInputAction.next,
-                      autocorrect: false,
-                      decoration: const InputDecoration(
-                        labelText: 'Email (optional)',
-                        prefixIcon: Icon(Icons.email_outlined),
-                      ),
-                      validator: (value) {
-                        if (value != null && value.trim().isNotEmpty && !value.contains('@')) {
-                          return 'Please enter a valid email';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    // Password field
-                    TextFormField(
-                      controller: _passwordController,
-                      obscureText: _obscurePassword,
-                      textInputAction: TextInputAction.done,
-                      onFieldSubmitted: (_) => _register(),
-                      decoration: InputDecoration(
-                        labelText: 'Password',
-                        prefixIcon: const Icon(Icons.lock_outlined),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
+
+                    // Title
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(32, 12, 32, 0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Create Account',
+                            style: GoogleFonts.inter(
+                              fontSize: 26,
+                              fontWeight: FontWeight.w700,
+                              color: kOnSurface,
+                            ),
                           ),
-                          onPressed: () {
-                            setState(() {
-                              _obscurePassword = !_obscurePassword;
-                            });
-                          },
-                        ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Join WhatsApp today',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              color: kOnSurfaceVariant,
+                            ),
+                          ),
+                        ],
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter a password';
-                        }
-                        if (value.length < 6) {
-                          return 'Password must be at least 6 characters';
-                        }
-                        return null;
-                      },
                     ),
-                    const SizedBox(height: 32),
-                    // Register button
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton(
-                        onPressed: auth.isLoading ? null : _register,
-                        child: auth.isLoading
-                            ? const SizedBox(
-                                height: 22,
-                                width: 22,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2.5,
+
+                    const SizedBox(height: 28),
+
+                    // Form fields
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      child: Column(
+                        children: [
+                          // Full Name
+                          _buildField(
+                            controller: _nameController,
+                            hint: 'Full Name',
+                            icon: Icons.person,
+                            iconColor: Colors.indigo.shade400,
+                            inputAction: TextInputAction.next,
+                            capitalization: TextCapitalization.words,
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Please enter your name';
+                              }
+                              if (value.trim().length < 2) {
+                                return 'Name must be at least 2 characters';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Username
+                          _buildField(
+                            controller: _usernameController,
+                            hint: 'Username',
+                            icon: Icons.alternate_email,
+                            iconColor: Colors.grey.shade600,
+                            inputAction: TextInputAction.next,
+                            helperText: 'Others will find you by this username',
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Please choose a username';
+                              }
+                              if (value.trim().length < 3) {
+                                return 'Username must be at least 3 characters';
+                              }
+                              if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(value.trim())) {
+                                return 'Only letters, numbers and underscores';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Phone (optional)
+                          _buildField(
+                            controller: _phoneController,
+                            hint: 'Phone (optional)',
+                            icon: Icons.call,
+                            iconColor: kPrimary,
+                            inputType: TextInputType.phone,
+                            inputAction: TextInputAction.next,
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Email (optional)
+                          _buildField(
+                            controller: _emailController,
+                            hint: 'Email (optional)',
+                            icon: Icons.mail,
+                            iconColor: Colors.blue.shade400,
+                            inputType: TextInputType.emailAddress,
+                            inputAction: TextInputAction.next,
+                            validator: (value) {
+                              if (value != null && value.trim().isNotEmpty && !value.contains('@')) {
+                                return 'Please enter a valid email';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Password
+                          TextFormField(
+                            controller: _passwordController,
+                            obscureText: _obscurePassword,
+                            textInputAction: TextInputAction.done,
+                            onFieldSubmitted: (_) => _register(),
+                            style: GoogleFonts.inter(fontSize: 15),
+                            decoration: InputDecoration(
+                              hintText: 'Password',
+                              hintStyle: GoogleFonts.inter(
+                                color: Colors.grey.shade500,
+                                fontSize: 15,
+                              ),
+                              prefixIcon: Icon(
+                                Icons.lock,
+                                color: Colors.amber.shade700,
+                                size: 22,
+                              ),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePassword
+                                      ? Icons.visibility_outlined
+                                      : Icons.visibility_off_outlined,
+                                  color: Colors.grey.shade500,
+                                  size: 20,
                                 ),
-                              )
-                            : const Text('Create Account'),
+                                onPressed: () {
+                                  setState(() => _obscurePassword = !_obscurePassword);
+                                },
+                              ),
+                              border: const UnderlineInputBorder(),
+                              enabledBorder: UnderlineInputBorder(
+                                borderSide: BorderSide(color: Colors.grey.shade300),
+                              ),
+                              focusedBorder: const UnderlineInputBorder(
+                                borderSide: BorderSide(color: kPrimary, width: 2),
+                              ),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter a password';
+                              }
+                              if (value.length < 6) {
+                                return 'Password must be at least 6 characters';
+                              }
+                              return null;
+                            },
+                          ),
+
+                          const SizedBox(height: 20),
+
+                          // Terms text
+                          RichText(
+                            text: TextSpan(
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                                height: 1.5,
+                              ),
+                              children: [
+                                const TextSpan(text: 'By creating an account, you agree to our '),
+                                TextSpan(
+                                  text: 'Terms of Service',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    color: kPrimary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  recognizer: TapGestureRecognizer()..onTap = () {},
+                                ),
+                                const TextSpan(text: ' and '),
+                                TextSpan(
+                                  text: 'Privacy Policy',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    color: kPrimary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  recognizer: TapGestureRecognizer()..onTap = () {},
+                                ),
+                                const TextSpan(text: '.'),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 28),
+
+                          // Create Account button
+                          SizedBox(
+                            width: double.infinity,
+                            height: 50,
+                            child: ElevatedButton(
+                              onPressed: auth.isLoading ? null : _register,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: kPrimary,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(25),
+                                ),
+                              ),
+                              child: auth.isLoading
+                                  ? const SizedBox(
+                                      height: 22,
+                                      width: 22,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2.5,
+                                      ),
+                                    )
+                                  : Text(
+                                      'Create Account',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 24),
+
+                          // Sign In link
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Already have an account? ',
+                                style: GoogleFonts.inter(
+                                  fontSize: 14,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () => Navigator.of(context).pop(),
+                                child: Text(
+                                  'Sign In',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: kPrimary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 40),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 20),
-                    // Login link
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Already have an account? ',
-                          style: TextStyle(color: Colors.grey.shade600),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          style: TextButton.styleFrom(
-                            padding: EdgeInsets.zero,
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          child: const Text(
-                            'Sign In',
-                            style: TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 40),
                   ],
                 ),
               ),
@@ -265,6 +353,48 @@ class _RegisterScreenState extends State<RegisterScreen> {
           },
         ),
       ),
+    );
+  }
+
+  Widget _buildField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    required Color iconColor,
+    TextInputType inputType = TextInputType.text,
+    TextInputAction inputAction = TextInputAction.next,
+    TextCapitalization capitalization = TextCapitalization.none,
+    String? helperText,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: inputType,
+      textInputAction: inputAction,
+      textCapitalization: capitalization,
+      autocorrect: false,
+      style: GoogleFonts.inter(fontSize: 15),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: GoogleFonts.inter(
+          color: Colors.grey.shade500,
+          fontSize: 15,
+        ),
+        helperText: helperText,
+        helperStyle: GoogleFonts.inter(
+          color: Colors.grey.shade500,
+          fontSize: 11,
+        ),
+        prefixIcon: Icon(icon, color: iconColor, size: 22),
+        border: const UnderlineInputBorder(),
+        enabledBorder: UnderlineInputBorder(
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: const UnderlineInputBorder(
+          borderSide: BorderSide(color: kPrimary, width: 2),
+        ),
+      ),
+      validator: validator,
     );
   }
 }

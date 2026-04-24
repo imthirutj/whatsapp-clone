@@ -1,0 +1,4 @@
+Identified the files: I found the UI-UX directory containing Messaging App.html.
+Started a server: I ran a command to start a temporary Node.js server using serve:
+powershell
+npx -y serve UI-UX -p 5001
