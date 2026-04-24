@@ -39,7 +39,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     try {
       await authProvider.register(
         _nameController.text,
-        _emailController.text,
+        _emailController.text.isNotEmpty ? _emailController.text : null,
         _phoneController.text.isNotEmpty ? _phoneController.text : null,
         _passwordController.text,
         username: _usernameController.text.isNotEmpty
@@ -166,21 +166,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // Email field
+                    // Email field (optional)
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
                       autocorrect: false,
                       decoration: const InputDecoration(
-                        labelText: 'Email',
+                        labelText: 'Email (optional)',
                         prefixIcon: Icon(Icons.email_outlined),
                       ),
                       validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter your email';
-                        }
-                        if (!value.contains('@')) {
+                        if (value != null && value.trim().isNotEmpty && !value.contains('@')) {
                           return 'Please enter a valid email';
                         }
                         return null;

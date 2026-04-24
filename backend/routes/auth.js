@@ -25,13 +25,15 @@ router.post('/register', async (req, res) => {
   try {
     const { name, email, password, phone, username: rawUsername } = req.body;
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: 'Name, email, and password are required' });
+    if (!name || !password) {
+      return res.status(400).json({ message: 'Name and password are required' });
     }
 
-    const existingEmail = await User.findOne({ email });
-    if (existingEmail) {
-      return res.status(400).json({ message: 'User with this email already exists' });
+    if (email) {
+      const existingEmail = await User.findOne({ email });
+      if (existingEmail) {
+        return res.status(400).json({ message: 'User with this email already exists' });
+      }
     }
 
     let username = rawUsername
@@ -43,7 +45,13 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: `Username "${username}" is already taken` });
     }
 
-    const user = await User.create({ name, username, email, password, phone });
+    const user = await User.create({
+      name,
+      username,
+      ...(email ? { email } : {}),
+      password,
+      ...(phone ? { phone } : {}),
+    });
 
     const token = signToken(user._id);
 
@@ -69,15 +77,18 @@ router.post('/register', async (req, res) => {
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, username, password } = req.body;
+    const identifier = email || username;
 
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
+    if (!identifier || !password) {
+      return res.status(400).json({ message: 'Username/email and password are required' });
     }
 
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne(
+      email ? { email: email.toLowerCase() } : { username: username.toLowerCase() }
+    ).select('+password');
     if (!user) {
-      return res.status(401).json({ message: 'Invalid email or password' });
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     const isMatch = await user.comparePassword(password);

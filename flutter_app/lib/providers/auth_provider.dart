@@ -46,8 +46,10 @@ class AuthProvider extends ChangeNotifier {
     _setLoading(true);
     _setError(null);
     try {
+      final identifier = email.trim();
+      final isEmail = identifier.contains('@');
       final data = await _api.post('/auth/login', {
-        'email': email.trim(),
+        if (isEmail) 'email': identifier else 'username': identifier,
         'password': password,
       });
 
@@ -74,7 +76,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> register(
     String name,
-    String email,
+    String? email,
     String? phone,
     String password, {
     String? username,
@@ -84,9 +86,11 @@ class AuthProvider extends ChangeNotifier {
     try {
       final body = <String, dynamic>{
         'name': name.trim(),
-        'email': email.trim(),
         'password': password,
       };
+      if (email != null && email.trim().isNotEmpty) {
+        body['email'] = email.trim();
+      }
       if (phone != null && phone.trim().isNotEmpty) {
         body['phone'] = phone.trim();
       }
