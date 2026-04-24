@@ -2,12 +2,13 @@ import 'package:intl/intl.dart';
 
 class TimeUtils {
   static String formatMessageTime(DateTime dateTime) {
+    final local = dateTime.toLocal();
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final messageDay = DateTime(dateTime.year, dateTime.month, dateTime.day);
+    final messageDay = DateTime(local.year, local.month, local.day);
 
     if (messageDay == today) {
-      return DateFormat('HH:mm').format(dateTime);
+      return DateFormat('HH:mm').format(local);
     }
 
     final yesterday = today.subtract(const Duration(days: 1));
@@ -17,24 +18,25 @@ class TimeUtils {
 
     final daysAgo = today.difference(messageDay).inDays;
     if (daysAgo < 7) {
-      return DateFormat('EEEE').format(dateTime); // Day name
+      return DateFormat('EEEE').format(local);
     }
 
-    return DateFormat('dd/MM/yy').format(dateTime);
+    return DateFormat('dd/MM/yy').format(local);
   }
 
   static String formatChatTime(DateTime dateTime) {
+    final local = dateTime.toLocal();
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final msgDay = DateTime(dateTime.year, dateTime.month, dateTime.day);
+    final msgDay = DateTime(local.year, local.month, local.day);
 
     if (msgDay == today) {
-      return DateFormat('HH:mm').format(dateTime);
+      return DateFormat('HH:mm').format(local);
     }
     final daysAgo = today.difference(msgDay).inDays;
     if (daysAgo == 1) return 'Yesterday';
-    if (daysAgo < 7) return DateFormat('EEE').format(dateTime);
-    return DateFormat('dd/MM/yy').format(dateTime);
+    if (daysAgo < 7) return DateFormat('EEE').format(local);
+    return DateFormat('dd/MM/yy').format(local);
   }
 
   static String formatDateSeparator(DateTime dateTime) {
