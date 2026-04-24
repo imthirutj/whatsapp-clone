@@ -130,6 +130,7 @@ class _CallsScreenState extends State<CallsScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'calls_fab',
         onPressed: () {},
         child: const Icon(Icons.add_call),
       ),

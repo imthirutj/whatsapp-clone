@@ -240,6 +240,7 @@ class _UpdatesScreenState extends State<UpdatesScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'updates_fab',
         onPressed: () => _showAddStatusDialog(context),
         child: const Icon(Icons.edit),
       ),
