@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -199,8 +200,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
 
   void _showNewChatDialog(BuildContext context) {
     final chatProvider = context.read<ChatProvider>();
-    final authProvider = context.read<AuthProvider>();
-    chatProvider.loadUsers();
+    chatProvider.searchUsers(''); // clear previous results
 
     showModalBottomSheet(
       context: context,
@@ -237,10 +237,12 @@ class _ContactPickerSheet extends StatefulWidget {
 class _ContactPickerSheetState extends State<_ContactPickerSheet> {
   final _searchController = TextEditingController();
   String _query = '';
+  Timer? _debounce;
 
   @override
   void dispose() {
     _searchController.dispose();
+    _debounce?.cancel();
     super.dispose();
   }
 
@@ -289,7 +291,7 @@ class _ContactPickerSheetState extends State<_ContactPickerSheet> {
                     controller: _searchController,
                     autofocus: true,
                     decoration: InputDecoration(
-                      hintText: 'Search by name, phone or email',
+                      hintText: 'Search by @username or email',
                       prefixIcon: const Icon(Icons.search, color: kPrimary),
                       filled: true,
                       fillColor: Colors.grey.shade100,
@@ -299,7 +301,13 @@ class _ContactPickerSheetState extends State<_ContactPickerSheet> {
                       ),
                       contentPadding: const EdgeInsets.symmetric(vertical: 0),
                     ),
-                    onChanged: (v) => setState(() => _query = v),
+                    onChanged: (v) {
+                      setState(() => _query = v);
+                      _debounce?.cancel();
+                      _debounce = Timer(const Duration(milliseconds: 400), () {
+                        context.read<ChatProvider>().searchUsers(v);
+                      });
+                    },
                   ),
                 ),
                 const Divider(height: 1),
@@ -307,54 +315,70 @@ class _ContactPickerSheetState extends State<_ContactPickerSheet> {
                 Expanded(
                   child: chatProvider.isLoadingUsers
                       ? const Center(child: CircularProgressIndicator(color: kPrimary))
-                      : filtered.isEmpty
+                      : _query.isEmpty
                           ? Center(
-                              child: Text(
-                                _query.isEmpty ? 'No contacts found' : 'No results for "$_query"',
-                                style: TextStyle(color: Colors.grey.shade500),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.person_search,
+                                      size: 56, color: Colors.grey.shade300),
+                                  const SizedBox(height: 12),
+                                  Text('Search by @username or email',
+                                      style: TextStyle(
+                                          color: Colors.grey.shade500, fontSize: 14)),
+                                ],
                               ),
                             )
-                          : ListView.builder(
-                              controller: scrollController,
-                              itemCount: filtered.length,
-                              itemBuilder: (context, index) {
-                                final user = filtered[index];
-                                return ListTile(
-                                  leading: AvatarWidget(
-                                    user: user,
-                                    size: 48,
-                                    showOnlineIndicator: true,
+                          : chatProvider.users.isEmpty
+                              ? Center(
+                                  child: Text(
+                                    'No user found for "$_query"',
+                                    style: TextStyle(color: Colors.grey.shade500),
                                   ),
-                                  title: Text(
-                                    user.name,
-                                    style: const TextStyle(fontWeight: FontWeight.w600),
-                                  ),
-                                  subtitle: Text(
-                                    user.phone ?? user.email,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                  ),
-                                  trailing: user.online
-                                      ? Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 8, vertical: 3),
-                                          decoration: BoxDecoration(
-                                            color: kPrimary.withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(10),
-                                          ),
-                                          child: const Text('online',
-                                              style: TextStyle(
-                                                  fontSize: 11,
-                                                  color: kPrimary,
-                                                  fontWeight: FontWeight.w500)),
-                                        )
-                                      : null,
-                                  onTap: () => widget.onSelectUser(user),
-                                );
-                              },
-                            ),
+                                )
+                              : ListView.builder(
+                                  controller: scrollController,
+                                  itemCount: chatProvider.users.length,
+                                  itemBuilder: (context, index) {
+                                    final user = chatProvider.users[index];
+                                    return ListTile(
+                                      leading: AvatarWidget(
+                                        user: user,
+                                        size: 48,
+                                        showOnlineIndicator: true,
+                                      ),
+                                      title: Text(
+                                        user.name,
+                                        style: const TextStyle(fontWeight: FontWeight.w600),
+                                      ),
+                                      subtitle: Text(
+                                        user.username != null
+                                            ? '@${user.username}  ·  ${user.email}'
+                                            : user.email,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey.shade600,
+                                        ),
+                                      ),
+                                      trailing: user.online
+                                          ? Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                  horizontal: 8, vertical: 3),
+                                              decoration: BoxDecoration(
+                                                color: kPrimary.withOpacity(0.1),
+                                                borderRadius: BorderRadius.circular(10),
+                                              ),
+                                              child: const Text('online',
+                                                  style: TextStyle(
+                                                      fontSize: 11,
+                                                      color: kPrimary,
+                                                      fontWeight: FontWeight.w500)),
+                                            )
+                                          : null,
+                                      onTap: () => widget.onSelectUser(user),
+                                    );
+                                  },
+                                ),
                 ),
               ],
             );

@@ -76,8 +76,9 @@ class AuthProvider extends ChangeNotifier {
     String name,
     String email,
     String? phone,
-    String password,
-  ) async {
+    String password, {
+    String? username,
+  }) async {
     _setLoading(true);
     _setError(null);
     try {
@@ -88,6 +89,9 @@ class AuthProvider extends ChangeNotifier {
       };
       if (phone != null && phone.trim().isNotEmpty) {
         body['phone'] = phone.trim();
+      }
+      if (username != null && username.trim().isNotEmpty) {
+        body['username'] = username.trim().toLowerCase();
       }
 
       final data = await _api.post('/auth/register', body);

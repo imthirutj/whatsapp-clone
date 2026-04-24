@@ -9,27 +9,48 @@ const signToken = (userId) => {
   return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
 };
 
+// generates a unique username from a name, e.g. "John Doe" -> "johndoe" or "johndoe_3"
+const generateUsername = async (name) => {
+  const base = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+  let username = base;
+  let i = 1;
+  while (await User.findOne({ username })) {
+    username = `${base}_${i++}`;
+  }
+  return username;
+};
+
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password, phone } = req.body;
+    const { name, email, password, phone, username: rawUsername } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({ message: 'Name, email, and password are required' });
     }
 
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
+    const existingEmail = await User.findOne({ email });
+    if (existingEmail) {
       return res.status(400).json({ message: 'User with this email already exists' });
     }
 
-    const user = await User.create({ name, email, password, phone });
+    let username = rawUsername
+      ? rawUsername.toLowerCase().trim()
+      : await generateUsername(name);
+
+    const existingUsername = await User.findOne({ username });
+    if (existingUsername) {
+      return res.status(400).json({ message: `Username "${username}" is already taken` });
+    }
+
+    const user = await User.create({ name, username, email, password, phone });
 
     const token = signToken(user._id);
 
     const userObj = {
       _id: user._id,
       name: user.name,
+      username: user.username,
       email: user.email,
       phone: user.phone,
       avatarColor: user.avatarColor,
@@ -71,6 +92,7 @@ router.post('/login', async (req, res) => {
       name: user.name,
       email: user.email,
       phone: user.phone,
+      username: user.username,
       avatarColor: user.avatarColor,
       bio: user.bio,
       online: user.online,

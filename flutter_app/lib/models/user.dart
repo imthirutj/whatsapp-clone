@@ -1,6 +1,7 @@
 class User {
   final String id;
   final String name;
+  final String? username;
   final String email;
   final String? phone;
   final String avatarColor;
@@ -11,6 +12,7 @@ class User {
   const User({
     required this.id,
     required this.name,
+    this.username,
     required this.email,
     this.phone,
     required this.avatarColor,
@@ -30,6 +32,7 @@ class User {
     return User(
       id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
       name: json['name']?.toString() ?? '',
+      username: json['username']?.toString(),
       email: json['email']?.toString() ?? '',
       phone: json['phone']?.toString(),
       avatarColor: json['avatarColor']?.toString() ?? '#006A4E',
@@ -57,6 +60,7 @@ class User {
   User copyWith({
     String? id,
     String? name,
+    String? username,
     String? email,
     String? phone,
     String? avatarColor,
@@ -67,6 +71,7 @@ class User {
     return User(
       id: id ?? this.id,
       name: name ?? this.name,
+      username: username ?? this.username,
       email: email ?? this.email,
       phone: phone ?? this.phone,
       avatarColor: avatarColor ?? this.avatarColor,

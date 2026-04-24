@@ -75,18 +75,24 @@ class ChatProvider extends ChangeNotifier {
     if (changed) notifyListeners();
   }
 
-  Future<void> loadUsers() async {
+  Future<void> searchUsers(String query) async {
+    if (query.trim().isEmpty) {
+      _users = [];
+      notifyListeners();
+      return;
+    }
     _isLoadingUsers = true;
     notifyListeners();
     try {
-      final data = await _api.get('/users');
+      final encoded = Uri.encodeComponent(query.trim());
+      final data = await _api.get('/users?q=$encoded');
       final list = data is List ? data : (data['users'] as List<dynamic>? ?? []);
       _users = list
           .whereType<Map<String, dynamic>>()
           .map((u) => User.fromJson(u))
           .toList();
     } catch (e) {
-      // silently fail — users list is best-effort
+      _users = [];
     } finally {
       _isLoadingUsers = false;
       notifyListeners();

@@ -14,6 +14,7 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -22,6 +23,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _usernameController.dispose();
     _phoneController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
@@ -40,6 +42,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
         _emailController.text,
         _phoneController.text.isNotEmpty ? _phoneController.text : null,
         _passwordController.text,
+        username: _usernameController.text.isNotEmpty
+            ? _usernameController.text
+            : null,
       );
       if (mounted) {
         chatProvider.initSocketListeners();
@@ -119,6 +124,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         }
                         if (value.trim().length < 2) {
                           return 'Name must be at least 2 characters';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    // Username field
+                    TextFormField(
+                      controller: _usernameController,
+                      keyboardType: TextInputType.text,
+                      textInputAction: TextInputAction.next,
+                      autocorrect: false,
+                      decoration: const InputDecoration(
+                        labelText: 'Username',
+                        hintText: 'e.g. john_doe',
+                        prefixIcon: Icon(Icons.alternate_email),
+                        helperText: 'Others will find you by this username',
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please choose a username';
+                        }
+                        if (value.trim().length < 3) {
+                          return 'Username must be at least 3 characters';
+                        }
+                        if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(value.trim())) {
+                          return 'Only letters, numbers and underscores';
                         }
                         return null;
                       },

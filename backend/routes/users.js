@@ -7,10 +7,33 @@ const router = express.Router();
 // All routes protected
 router.use(protect);
 
-// GET /api/users - get all users except current user
+// GET /api/users?q=searchterm — search by username, email, or _id
+// Returns empty array if no query provided (don't expose full user list)
 router.get('/', async (req, res) => {
   try {
-    const users = await User.find({ _id: { $ne: req.user.userId } }).select('-password');
+    const { q } = req.query;
+
+    if (!q || q.trim().length < 1) {
+      return res.status(200).json([]);
+    }
+
+    const term = q.trim();
+    const query = {
+      _id: { $ne: req.user.userId },
+      $or: [
+        { username: { $regex: `^${term}$`, $options: 'i' } },  // exact username
+        { email: term.toLowerCase() },                           // exact email
+        { username: { $regex: term, $options: 'i' } },          // partial username
+      ]
+    };
+
+    // also match by MongoDB _id if it looks like one
+    const mongoose = require('mongoose');
+    if (mongoose.Types.ObjectId.isValid(term)) {
+      query.$or.push({ _id: term });
+    }
+
+    const users = await User.find(query).select('-password').limit(20);
     res.status(200).json(users);
   } catch (error) {
     res.status(500).json({ message: 'Server error fetching users', error: error.message });
