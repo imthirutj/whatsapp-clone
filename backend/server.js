@@ -11,6 +11,7 @@ const chatRoutes = require('./routes/chats');
 const callRoutes = require('./routes/calls');
 const statusRoutes = require('./routes/status');
 const mediaRoutes = require('./routes/media');
+const path = require('path');
 const setupSocket = require('./socket/socketHandler');
 
 const app = express();
@@ -29,6 +30,7 @@ app.set('io', io);
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -40,7 +42,17 @@ app.use('/api/media', mediaRoutes);
 
 // Health check
 app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Health check endpoint moved to /api/health
+app.get('/api/health', (req, res) => {
   res.json({ message: 'WhatsApp Clone API is running' });
+});
+
+// Version endpoint
+app.get('/api/version', (req, res) => {
+  res.sendFile(path.join(__dirname, 'version.json'));
 });
 
 // Socket setup

@@ -1,0 +1,16 @@
+{
+  "name": "schatapp-monorepo",
+  "version": "1.0.0",
+  "description": "Monorepo for WhatsApp Clone",
+  "private": true,
+  "scripts": {
+    "backend:dev": "npm run dev --prefix backend",
+    "backend:install": "npm install --prefix backend",
+    "flutter:get": "cd flutter_app && flutter pub get",
+    "flutter:run": "cd flutter_app && flutter run",
+    "gateway:start": "npm start --prefix gateway",
+    "gateway:dev": "npm run dev --prefix gateway",
+    "gateway:install": "npm install --prefix gateway",
+    "install:all": "npm run backend:install && npm run flutter:get && npm run gateway:install"
+  }
+}

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-const String kBaseUrl = 'http://localhost:3000/api';
-const String kSocketUrl = 'http://localhost:3000';
+const String kBaseUrl = 'http://192.168.1.15:3000/api';
+const String kSocketUrl = 'http://192.168.1.15:3000';
 
 // Material 3 / Prototype Colors
 const Color kPrimary = Color(0xFF006A4E);

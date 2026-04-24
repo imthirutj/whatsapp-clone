@@ -5,7 +5,10 @@
       "Bash(flutter analyze *)",
       "Bash(npm install *)",
       "Bash(flutter build *)",
-      "Bash(flutter create *)"
+      "Bash(flutter create *)",
+      "Bash(flutter run *)",
+      "Bash(flutter clean *)",
+      "Bash(ipconfig)"
     ]
   }
 }

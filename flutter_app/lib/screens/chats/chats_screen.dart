@@ -2,10 +2,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/foundation.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import '../../providers/auth_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../models/chat.dart';
 import '../../models/user.dart';
+import '../../services/version_service.dart';
 import '../../constants.dart';
 import '../../widgets/chat_list_item.dart';
 import '../../widgets/avatar_widget.dart';
@@ -49,6 +53,20 @@ class _ChatsScreenState extends State<ChatsScreen> {
           ),
         ),
         actions: [
+          if (kIsWeb)
+            IconButton(
+              icon: const Icon(Icons.download_for_offline_outlined, size: 24),
+              tooltip: 'Download APK',
+              onPressed: () async {
+                final versionInfo = await VersionService.getVersionInfo();
+                if (versionInfo != null && versionInfo['apkFilename'] != null) {
+                  final url = VersionService.getDownloadUrl(versionInfo['apkFilename']);
+                  if (await canLaunchUrl(Uri.parse(url))) {
+                    await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                  }
+                }
+              },
+            ),
           IconButton(
             icon: const Icon(Icons.camera_alt_outlined, size: 24),
             onPressed: () {},
@@ -134,7 +152,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
               // Chat List
               Expanded(
                 child: chat.isLoading && chat.chats.isEmpty
-                    ? const Center(child: CircularProgressIndicator(color: kPrimary))
+                    ? Center(child: CircularProgressIndicator(color: kPrimary))
                     : RefreshIndicator(
                         color: kPrimary,
                         onRefresh: () => chat.loadChats(),
@@ -252,7 +270,7 @@ class _ContactPickerSheetState extends State<_ContactPickerSheet> {
                     autofocus: true,
                     decoration: InputDecoration(
                       hintText: 'Enter exact @username or email',
-                      prefixIcon: const Icon(Icons.search, color: kPrimary),
+                      prefixIcon: Icon(Icons.search, color: kPrimary),
                       filled: true,
                       fillColor: Colors.grey.shade100,
                       border: OutlineInputBorder(
@@ -273,7 +291,7 @@ class _ContactPickerSheetState extends State<_ContactPickerSheet> {
                 const Divider(height: 1),
                 Expanded(
                   child: chatProvider.isLoadingUsers
-                      ? const Center(child: CircularProgressIndicator(color: kPrimary))
+                      ? Center(child: CircularProgressIndicator(color: kPrimary))
                       : ListView.builder(
                           controller: scrollController,
                           itemCount: chatProvider.users.length,

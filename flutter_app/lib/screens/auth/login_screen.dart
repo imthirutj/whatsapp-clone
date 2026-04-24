@@ -5,6 +5,9 @@ import '../../providers/auth_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../constants.dart';
 import '../home/home_screen.dart';
+import 'package:flutter/foundation.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../services/version_service.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -295,6 +298,41 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ],
                         ),
+                        
+                        if (kIsWeb) ...[
+                          const SizedBox(height: 32),
+                          const Divider(),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Want to use SchatApp on your phone?',
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          OutlinedButton.icon(
+                            onPressed: () async {
+                              final versionInfo = await VersionService.getVersionInfo();
+                              if (versionInfo != null && versionInfo['apkFilename'] != null) {
+                                final url = VersionService.getDownloadUrl(versionInfo['apkFilename']);
+                                if (await canLaunchUrl(Uri.parse(url))) {
+                                  await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                                }
+                              }
+                            },
+                            icon: const Icon(Icons.android, size: 20),
+                            label: const Text('Download Android App'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: kPrimary,
+                              side: const BorderSide(color: kPrimary),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                          ),
+                        ],
+                        
                         const SizedBox(height: 40),
                       ],
                     ),

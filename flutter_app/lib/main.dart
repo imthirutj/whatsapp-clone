@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'package:url_launcher/url_launcher.dart';
 import 'constants.dart';
 import 'providers/auth_provider.dart';
 import 'providers/chat_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home/home_screen.dart';
+import 'services/version_service.dart';
 import 'theme/app_theme.dart';
 
 void main() {
@@ -51,12 +53,61 @@ class _AppEntryPointState extends State<AppEntryPoint> {
 
   Future<void> _initialize() async {
     final authProvider = context.read<AuthProvider>();
+    
+    // Check for update
+    final needsUpdate = await VersionService.checkForUpdate();
+    if (needsUpdate && mounted) {
+      _showUpdateDialog();
+      return;
+    }
+
     await authProvider.initialize();
     if (mounted) {
       setState(() {
         _initialized = true;
       });
     }
+  }
+
+  void _showUpdateDialog() async {
+    final versionInfo = await VersionService.getVersionInfo();
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Force update
+      builder: (context) => WillPopScope(
+        onWillPop: () async => false, // Disable back button
+        child: AlertDialog(
+          title: const Text('Update Required'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('A new version (${versionInfo?['latestVersion']}) is available. Please update to continue.'),
+              if (versionInfo?['releaseNotes'] != null) ...[
+                const SizedBox(height: 16),
+                const Text('What\'s new:', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(versionInfo!['releaseNotes']),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                if (versionInfo?['apkFilename'] != null) {
+                  final url = VersionService.getDownloadUrl(versionInfo!['apkFilename']);
+                  if (await canLaunchUrl(Uri.parse(url))) {
+                    await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                  }
+                }
+              },
+              child: const Text('UPDATE NOW'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override

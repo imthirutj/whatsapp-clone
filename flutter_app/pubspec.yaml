@@ -1,4 +1,4 @@
-name: whatsapp_clone
+name: schatapp
 description: A WhatsApp clone messaging app
 publish_to: 'none'
 version: 1.0.0+1
@@ -19,6 +19,9 @@ dependencies:
   google_fonts: ^8.0.2
   emoji_picker_flutter: ^3.1.0
   file_picker: ^8.0.0
+  package_info_plus: ^8.0.0
+  url_launcher: ^6.2.1
+  cupertino_icons: ^1.0.6
 
 dev_dependencies:
   flutter_test:

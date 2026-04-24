@@ -1,6 +1,4 @@
 import 'dart:async';
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html show FileUploadInputElement, FileReader;
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -151,51 +149,19 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   }
 
   Future<void> _pickAndSendImage() async {
-    if (foundation.kIsWeb) {
-      await _pickAndSendImageWeb();
-    } else {
-      await _pickAndSendImageNative();
-    }
-  }
-
-  // Web: use dart:html directly — no plugin registration needed
-  Future<void> _pickAndSendImageWeb() async {
-    final completer = Completer<Uint8List?>();
-    final input = html.FileUploadInputElement()..accept = 'image/*';
-    input.click();
-    input.onChange.listen((_) {
-      final files = input.files;
-      if (files == null || files.isEmpty) { completer.complete(null); return; }
-      final reader = html.FileReader();
-      reader.readAsArrayBuffer(files[0]);
-      reader.onLoad.listen((_) {
-        final result = reader.result;
-        if (result is List<int>) {
-          completer.complete(Uint8List.fromList(result));
-        } else {
-          completer.complete(null);
-        }
-      });
-      reader.onError.listen((_) => completer.complete(null));
-    });
-
-    final bytes = await completer.future;
-    if (bytes == null || !mounted) return;
-
-    await _uploadAndSend(bytes, 'image.jpg');
-  }
-
-  // Native (mobile/desktop): use file_picker
-  Future<void> _pickAndSendImageNative() async {
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.image,
         allowMultiple: false,
-        withData: true,
+        withData: true, // Required for web to get bytes
       );
+      
       if (result == null || result.files.isEmpty) return;
-      final bytes = result.files.first.bytes;
-      final name = result.files.first.name;
+      
+      final file = result.files.first;
+      final bytes = file.bytes;
+      final name = file.name;
+      
       if (bytes == null) return;
       await _uploadAndSend(bytes, name);
     } catch (e) {
