@@ -252,8 +252,10 @@ class ChatProvider extends ChangeNotifier {
       if (alreadyExists) return;
 
       // If this chat is currently open, mark as read immediately (no badge)
+      // but still update the chat list's last message preview.
       if (_activeChatId == chatId) {
         markChatAsRead(chatId, _currentUserId ?? '');
+        _updateChatLastMessage(chatId, message);
         return;
       }
 
