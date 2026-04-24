@@ -8,6 +8,8 @@ class Message {
   final String type;
   final String status;
   final DateTime createdAt;
+  final Message? replyTo;
+  final Map<String, String> reactions;
 
   const Message({
     required this.id,
@@ -17,9 +19,18 @@ class Message {
     required this.type,
     required this.status,
     required this.createdAt,
+    this.replyTo,
+    this.reactions = const {},
   });
 
   factory Message.fromJson(Map<String, dynamic> json) {
+    Map<String, String> parseReactions(dynamic raw) {
+      if (raw is Map) {
+        return raw.map((k, v) => MapEntry(k.toString(), v.toString()));
+      }
+      return {};
+    }
+
     return Message(
       id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
       chatId: json['chatId']?.toString() ?? json['chat']?.toString() ?? '',
@@ -39,6 +50,10 @@ class Message {
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now()
           : DateTime.now(),
+      replyTo: json['replyTo'] is Map<String, dynamic>
+          ? Message.fromJson(json['replyTo'] as Map<String, dynamic>)
+          : null,
+      reactions: parseReactions(json['reactions']),
     );
   }
 
@@ -50,6 +65,8 @@ class Message {
     String? type,
     String? status,
     DateTime? createdAt,
+    Message? replyTo,
+    Map<String, String>? reactions,
   }) {
     return Message(
       id: id ?? this.id,
@@ -59,6 +76,8 @@ class Message {
       type: type ?? this.type,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
+      replyTo: replyTo ?? this.replyTo,
+      reactions: reactions ?? this.reactions,
     );
   }
 
@@ -71,6 +90,8 @@ class Message {
       'type': type,
       'status': status,
       'createdAt': createdAt.toIso8601String(),
+      if (replyTo != null) 'replyTo': replyTo!.toJson(),
+      'reactions': reactions,
     };
   }
 }

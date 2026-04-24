@@ -72,6 +72,7 @@ router.get('/:id/messages', async (req, res) => {
 
     const messages = await Message.find(query)
       .populate('sender', 'name avatarColor')
+      .populate({ path: 'replyTo', populate: { path: 'sender', select: 'name avatarColor' } })
       .sort({ createdAt: -1 }) // newest first so limit cuts off oldest
       .limit(limit);
 
@@ -89,13 +90,19 @@ router.get('/:id/messages', async (req, res) => {
 // POST /api/chats/:id/messages
 router.post('/:id/messages', async (req, res) => {
   try {
-    const { text, type = 'text' } = req.body;
+    const { text, type = 'text', replyTo } = req.body;
     if (!text) return res.status(400).json({ message: 'Message text is required' });
 
     const chat = await Chat.findOne({ _id: req.params.id, participants: req.user.userId });
     if (!chat) return res.status(404).json({ message: 'Chat not found or access denied' });
 
-    const message = await Message.create({ chatId: req.params.id, sender: req.user.userId, text, type });
+    const message = await Message.create({
+      chatId: req.params.id,
+      sender: req.user.userId,
+      text,
+      type,
+      ...(replyTo ? { replyTo } : {}),
+    });
 
     // Increment unread count for every participant except sender
     const unreadUpdate = {};
@@ -110,7 +117,9 @@ router.post('/:id/messages', async (req, res) => {
       updatedAt: new Date()
     });
 
-    const populatedMessage = await Message.findById(message._id).populate('sender', 'name avatarColor');
+    const populatedMessage = await Message.findById(message._id)
+      .populate('sender', 'name avatarColor')
+      .populate({ path: 'replyTo', populate: { path: 'sender', select: 'name avatarColor' } });
 
     const io = req.app.get('io');
     if (io) {
@@ -157,6 +166,43 @@ router.patch('/:id/read', async (req, res) => {
     res.status(200).json({ message: 'Messages marked as read' });
   } catch (error) {
     res.status(500).json({ message: 'Server error marking as read', error: error.message });
+  }
+});
+
+// PATCH /api/chats/:chatId/messages/:messageId/react
+router.patch('/:chatId/messages/:messageId/react', async (req, res) => {
+  try {
+    const { emoji } = req.body;
+    if (!emoji) return res.status(400).json({ message: 'emoji is required' });
+
+    const chat = await Chat.findOne({ _id: req.params.chatId, participants: req.user.userId });
+    if (!chat) return res.status(404).json({ message: 'Chat not found or access denied' });
+
+    const message = await Message.findOne({ _id: req.params.messageId, chatId: req.params.chatId });
+    if (!message) return res.status(404).json({ message: 'Message not found' });
+
+    const userId = req.user.userId.toString();
+    if (message.reactions.get(userId) === emoji) {
+      message.reactions.delete(userId); // toggle off same emoji
+    } else {
+      message.reactions.set(userId, emoji);
+    }
+    await message.save();
+
+    const reactionsObj = Object.fromEntries(message.reactions);
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`chat_${req.params.chatId}`).emit('message_reaction', {
+        chatId: req.params.chatId,
+        messageId: req.params.messageId,
+        reactions: reactionsObj,
+      });
+    }
+
+    res.status(200).json({ reactions: reactionsObj });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error reacting to message', error: error.message });
   }
 });
 

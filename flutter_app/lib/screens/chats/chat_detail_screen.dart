@@ -35,6 +35,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   bool _showEmojiPicker = false;
   bool _isUploadingMedia = false;
   bool _isLoadingMore = false;
+  Message? _replyingTo;
+  String? _highlightedMessageId;
+  final Map<String, GlobalKey> _messageKeys = {};
   Timer? _typingTimer;
 
   @override
@@ -91,6 +94,22 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       }
       if (mounted) setState(() => _isLoadingMore = false);
     });
+  }
+
+  Future<void> _scrollToMessage(String messageId) async {
+    final key = _messageKeys[messageId];
+    if (key?.currentContext == null) return;
+
+    await Scrollable.ensureVisible(
+      key!.currentContext!,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+      alignment: 0.5,
+    );
+
+    if (mounted) setState(() => _highlightedMessageId = messageId);
+    await Future.delayed(const Duration(milliseconds: 900));
+    if (mounted) setState(() => _highlightedMessageId = null);
   }
 
   Future<void> _loadMessages() async {
@@ -191,10 +210,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   Future<void> _uploadAndSend(Uint8List bytes, String filename) async {
     final chatProvider = context.read<ChatProvider>();
     final currentUser = context.read<AuthProvider>().currentUser!;
-    setState(() => _isUploadingMedia = true);
+    final reply = _replyingTo;
+    setState(() { _isUploadingMedia = true; _replyingTo = null; });
     try {
       final mediaId = await ApiService().uploadMedia(bytes, filename, 'image/jpeg');
-      await chatProvider.sendMessage(widget.chat.id, mediaId, currentUser, type: 'image');
+      await chatProvider.sendMessage(widget.chat.id, mediaId, currentUser, type: 'image', replyTo: reply);
       _scrollToBottom(animated: true);
     } catch (e) {
       if (mounted) {
@@ -223,10 +243,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
     final chatProvider = context.read<ChatProvider>();
     final currentUser = context.read<AuthProvider>().currentUser!;
+    final reply = _replyingTo;
     _messageController.clear();
+    setState(() => _replyingTo = null);
     chatProvider.sendTypingStatus(widget.chat.id, false);
     chatProvider.sendLiveTypingText(widget.chat.id, '');
-    await chatProvider.sendMessage(widget.chat.id, text, currentUser);
+    await chatProvider.sendMessage(widget.chat.id, text, currentUser, replyTo: reply);
     _scrollToBottom(animated: true);
   }
 
@@ -314,6 +336,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                   },
                   child: ListView.builder(
                     controller: _scrollController,
+                    cacheExtent: 9999,
                     padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
                     itemCount: (_isLoadingMore ? 1 : 0) + 1 + messages.length + (liveTypingText.isNotEmpty ? 1 : 0),
                     itemBuilder: (context, index) {
@@ -351,7 +374,19 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                       if (msgIndex > 0) {
                         showTail = messages[msgIndex - 1].sender.id != message.sender.id;
                       }
-                      return MessageBubble(message: message, isMe: isMe, showTail: showTail);
+                      final key = _messageKeys[message.id] ??= GlobalKey();
+                      return MessageBubble(
+                        key: key,
+                        message: message,
+                        isMe: isMe,
+                        showTail: showTail,
+                        isHighlighted: _highlightedMessageId == message.id,
+                        onReply: () => setState(() => _replyingTo = message),
+                        onReact: (emoji) => chatProvider.reactToMessage(widget.chat.id, message.id, emoji),
+                        onReplyTap: message.replyTo != null
+                            ? () => _scrollToMessage(message.replyTo!.id)
+                            : null,
+                      );
                     },
                   ),
                 ),
@@ -392,7 +427,67 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     );
   }
 
+  Widget _buildReplyPreview() {
+    final reply = _replyingTo!;
+    final previewText = reply.type == 'image' ? '📷 Photo' : reply.text;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(8, 0, 8, 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border(left: BorderSide(color: const Color(0xFF006A4E), width: 3)),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 2),
+        ],
+      ),
+      padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  reply.sender.name,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF006A4E),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  previewText,
+                  style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF667781)),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, size: 18, color: Color(0xFF667781)),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            onPressed: () => setState(() => _replyingTo = null),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildInputArea() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (_replyingTo != null) _buildReplyPreview(),
+        _buildInputRow(),
+      ],
+    );
+  }
+
+  Widget _buildInputRow() {
     return Container(
       padding: const EdgeInsets.fromLTRB(8, 4, 8, 12),
       child: Row(

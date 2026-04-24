@@ -117,6 +117,14 @@ class SocketService {
     _socket?.off('messages_read');
   }
 
+  void onMessageReaction(Function(dynamic) callback) {
+    _socket?.on('message_reaction', callback);
+  }
+
+  void offMessageReaction() {
+    _socket?.off('message_reaction');
+  }
+
   void removeAllListeners() {
     _socket?.clearListeners();
   }

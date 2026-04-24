@@ -57,6 +57,50 @@ class ChatProvider extends ChangeNotifier {
     _socket.onLiveTyping((data) {
       if (data is Map<String, dynamic>) handleLiveTyping(data);
     });
+    _socket.onMessageReaction((data) {
+      if (data is Map<String, dynamic>) _handleMessageReaction(data);
+    });
+  }
+
+  void _handleMessageReaction(Map<String, dynamic> data) {
+    final chatId = data['chatId']?.toString();
+    final messageId = data['messageId']?.toString();
+    final rawReactions = data['reactions'];
+    if (chatId == null || messageId == null) return;
+
+    Map<String, String> reactions = {};
+    if (rawReactions is Map) {
+      reactions = rawReactions.map((k, v) => MapEntry(k.toString(), v.toString()));
+    }
+
+    final msgs = _messages[chatId];
+    if (msgs != null) {
+      final index = msgs.indexWhere((m) => m.id == messageId);
+      if (index != -1) {
+        _messages[chatId]![index] = msgs[index].copyWith(reactions: reactions);
+        notifyListeners();
+      }
+    }
+  }
+
+  Future<void> reactToMessage(String chatId, String messageId, String emoji) async {
+    try {
+      final data = await _api.patch('/chats/$chatId/messages/$messageId/react', {'emoji': emoji});
+      if (data != null) {
+        final rawReactions = data['reactions'];
+        if (rawReactions is Map) {
+          final reactions = rawReactions.map((k, v) => MapEntry(k.toString(), v.toString()));
+          final msgs = _messages[chatId];
+          if (msgs != null) {
+            final index = msgs.indexWhere((m) => m.id == messageId);
+            if (index != -1) {
+              _messages[chatId]![index] = msgs[index].copyWith(reactions: reactions);
+              notifyListeners();
+            }
+          }
+        }
+      }
+    } catch (_) {}
   }
 
   void _handleMessagesRead(Map<String, dynamic> data) {
@@ -198,7 +242,13 @@ class ChatProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<Message?> sendMessage(String chatId, String text, User sender, {String type = 'text'}) async {
+  Future<Message?> sendMessage(
+    String chatId,
+    String text,
+    User sender, {
+    String type = 'text',
+    Message? replyTo,
+  }) async {
     // Optimistic: show message instantly before API responds
     final tempId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
     final tempMessage = Message(
@@ -209,12 +259,14 @@ class ChatProvider extends ChangeNotifier {
       type: type,
       status: 'sent',
       createdAt: DateTime.now(),
+      replyTo: replyTo,
     );
     _addOrUpdateMessage(chatId, tempMessage);
     _updateChatLastMessage(chatId, tempMessage);
 
     try {
-      final data = await _api.post('/chats/$chatId/messages', {'text': text, 'type': type});
+      final body = {'text': text, 'type': type, if (replyTo != null) 'replyTo': replyTo.id};
+      final data = await _api.post('/chats/$chatId/messages', body);
       if (data != null) {
         final msgData = data['message'] ?? data;
         final message = Message.fromJson(msgData as Map<String, dynamic>);
