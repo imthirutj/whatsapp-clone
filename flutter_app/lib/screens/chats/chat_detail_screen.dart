@@ -142,19 +142,19 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           appBar: AppBar(
             backgroundColor: const Color(0xFFEFEAE2),
             elevation: 0,
-            leadingWidth: 32,
+            leadingWidth: 40,
             leading: IconButton(
-              padding: const EdgeInsets.only(left: 8),
-              icon: const Icon(Icons.arrow_back, color: Color(0xFF006A4E)),
+              padding: const EdgeInsets.only(left: 4),
+              icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF006A4E)),
               onPressed: () => Navigator.of(context).pop(),
             ),
-            titleSpacing: 8,
+            titleSpacing: 0,
             title: Row(
               children: [
                 if (otherUser != null)
-                  AvatarWidget(user: otherUser, size: 38)
+                  AvatarWidget(user: otherUser, size: 42, showOnlineIndicator: true)
                 else
-                  const CircleAvatar(radius: 19, child: Icon(Icons.group)),
+                  const CircleAvatar(radius: 21, child: Icon(Icons.group)),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -163,16 +163,26 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                       Text(
                         displayName,
                         style: GoogleFonts.inter(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
                           color: kOnSurface,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
+                      const SizedBox(height: 1),
                       Text(
-                        isOtherTyping ? 'typing...' : (otherUser?.online ?? false) ? 'Active now' : 'Last seen today',
+                        isOtherTyping
+                            ? 'typing...'
+                            : (otherUser?.online ?? false)
+                                ? 'Active now'
+                                : 'Last seen recently',
                         style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: isOtherTyping || (otherUser?.online ?? false) ? const Color(0xFF006A4E) : kOnSurfaceVariant,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w400,
+                          color: isOtherTyping || (otherUser?.online ?? false)
+                              ? const Color(0xFF006A4E)
+                              : kOnSurfaceVariant,
                         ),
                       ),
                     ],
