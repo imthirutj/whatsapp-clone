@@ -28,8 +28,13 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ChatProvider>().initSocketListeners();
-      context.read<ChatProvider>().loadChats();
+      final auth = context.read<AuthProvider>();
+      final chat = context.read<ChatProvider>();
+      if (auth.currentUser != null) {
+        chat.setCurrentUserId(auth.currentUser!.id);
+      }
+      chat.initSocketListeners();
+      chat.loadChats();
     });
   }
 

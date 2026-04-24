@@ -63,9 +63,18 @@ const setupSocket = (io) => {
 
         const chat = await Chat.findById(chatId).select('participants');
 
-        // Emit to chat room (users with chat open) + each participant's personal room
-        io.to(`chat_${chatId}`).emit('new_message', populatedMessage);
         if (chat) {
+          // Increment unread for all other participants
+          const unreadUpdate = {};
+          chat.participants.forEach(p => {
+            if (p.toString() !== socket.userId.toString()) {
+              unreadUpdate[`unreadCounts.${p}`] = 1;
+            }
+          });
+          await Chat.findByIdAndUpdate(chatId, { $inc: unreadUpdate });
+
+          // Emit to chat room + each participant's personal room
+          io.to(`chat_${chatId}`).emit('new_message', populatedMessage);
           chat.participants.forEach(participantId => {
             if (participantId.toString() !== socket.userId.toString()) {
               io.to(`user_${participantId}`).emit('new_message', populatedMessage);

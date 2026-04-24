@@ -53,8 +53,13 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   }
 
   Future<void> _loadMessages() async {
+    final auth = context.read<AuthProvider>();
     final chatProvider = context.read<ChatProvider>();
     await chatProvider.loadMessages(widget.chat.id);
+    // Mark all messages as read when opening the chat
+    if (auth.currentUser != null) {
+      await chatProvider.markChatAsRead(widget.chat.id, auth.currentUser!.id);
+    }
     _scrollToBottom();
   }
 

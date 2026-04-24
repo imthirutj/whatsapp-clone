@@ -8,6 +8,7 @@ import '../services/socket_service.dart';
 class ChatProvider extends ChangeNotifier {
   List<Chat> _chats = [];
   List<User> _users = [];
+  String? _currentUserId;
   final Map<String, List<Message>> _messages = {};
   final Map<String, bool> _typingStatus = {};
   bool _isLoading = false;
@@ -28,30 +29,34 @@ class ChatProvider extends ChangeNotifier {
   final _api = ApiService();
   final _socket = SocketService();
 
+  void setCurrentUserId(String id) => _currentUserId = id;
+
   void initSocketListeners() {
     _socket.onNewMessage((data) {
-      if (data is Map<String, dynamic>) {
-        handleNewMessage(data);
-      }
+      if (data is Map<String, dynamic>) handleNewMessage(data);
     });
-
     _socket.onTyping((data) {
-      if (data is Map<String, dynamic>) {
-        handleTyping(data);
-      }
+      if (data is Map<String, dynamic>) handleTyping(data);
     });
-
     _socket.onMessageStatus((data) {
-      if (data is Map<String, dynamic>) {
-        handleMessageStatus(data);
-      }
+      if (data is Map<String, dynamic>) handleMessageStatus(data);
     });
-
     _socket.onUserStatus((data) {
-      if (data is Map<String, dynamic>) {
-        _handleUserStatus(data);
-      }
+      if (data is Map<String, dynamic>) _handleUserStatus(data);
     });
+    _socket.onMessagesRead((data) {
+      if (data is Map<String, dynamic>) _handleMessagesRead(data);
+    });
+  }
+
+  void _handleMessagesRead(Map<String, dynamic> data) {
+    final chatId = data['chatId']?.toString();
+    if (chatId == null) return;
+    // Mark all messages in this chat as read
+    final msgs = _messages[chatId];
+    if (msgs == null) return;
+    _messages[chatId] = msgs.map((m) => m.copyWith(status: 'read')).toList();
+    notifyListeners();
   }
 
   void _handleUserStatus(Map<String, dynamic> data) {
@@ -177,6 +182,18 @@ class ChatProvider extends ChangeNotifier {
     return null;
   }
 
+  Future<void> markChatAsRead(String chatId, String currentUserId) async {
+    try {
+      await _api.patch('/chats/$chatId/read', {});
+      // Reset local unread count
+      final idx = _chats.indexWhere((c) => c.id == chatId);
+      if (idx != -1) {
+        _chats[idx] = _chats[idx].copyWith(unreadCount: 0);
+        notifyListeners();
+      }
+    } catch (_) {}
+  }
+
   void handleNewMessage(Map<String, dynamic> data) {
     final chatId = data['chatId']?.toString() ?? data['chat']?.toString();
     if (chatId == null) return;
@@ -185,17 +202,28 @@ class ChatProvider extends ChangeNotifier {
       final message = Message.fromJson(data);
       _addOrUpdateMessage(chatId, message);
 
-      // If this chat isn't in our list yet (first message from someone),
-      // reload the full chats list so it appears
       final chatExists = _chats.any((c) => c.id == chatId);
       if (!chatExists) {
         loadChats();
       } else {
-        _updateChatLastMessage(chatId, message);
+        _updateChatLastMessageWithUnread(chatId, message);
       }
-    } catch (_) {
-      // Invalid message data
-    }
+    } catch (_) {}
+  }
+
+  void _updateChatLastMessageWithUnread(String chatId, Message message) {
+    final index = _chats.indexWhere((c) => c.id == chatId);
+    if (index == -1) return;
+    final current = _chats[index];
+    final isFromMe = message.sender.id == _currentUserId;
+    final newUnread = isFromMe ? current.unreadCount : current.unreadCount + 1;
+    _chats[index] = current.copyWith(
+      lastMessage: message,
+      updatedAt: message.createdAt,
+      unreadCount: newUnread,
+    );
+    _chats.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    notifyListeners();
   }
 
   void handleTyping(Map<String, dynamic> data) {
@@ -238,12 +266,10 @@ class ChatProvider extends ChangeNotifier {
   void _updateChatLastMessage(String chatId, Message message) {
     final index = _chats.indexWhere((c) => c.id == chatId);
     if (index != -1) {
-      final updated = _chats[index].copyWith(
+      _chats[index] = _chats[index].copyWith(
         lastMessage: message,
         updatedAt: message.createdAt,
       );
-      _chats = [..._chats];
-      _chats[index] = updated;
       _chats.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
       notifyListeners();
     }

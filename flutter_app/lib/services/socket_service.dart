@@ -93,6 +93,14 @@ class SocketService {
     _socket?.off('user_status');
   }
 
+  void onMessagesRead(Function(dynamic) callback) {
+    _socket?.on('messages_read', callback);
+  }
+
+  void offMessagesRead() {
+    _socket?.off('messages_read');
+  }
+
   void removeAllListeners() {
     _socket?.clearListeners();
   }

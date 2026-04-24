@@ -4,89 +4,62 @@ const Message = require('../models/Message');
 const { protect } = require('../middleware/auth');
 
 const router = express.Router();
-
-// All routes protected
 router.use(protect);
 
-// GET /api/chats - get all chats for current user
+const populateChat = (query) =>
+  query
+    .populate('participants', 'name username avatarColor online lastSeen')
+    .populate({ path: 'lastMessage', populate: { path: 'sender', select: 'name avatarColor' } });
+
+// GET /api/chats
 router.get('/', async (req, res) => {
   try {
-    const chats = await Chat.find({ participants: req.user.userId })
-      .populate('participants', 'name avatarColor online lastSeen')
-      .populate({
-        path: 'lastMessage',
-        populate: {
-          path: 'sender',
-          select: 'name avatarColor'
-        }
-      })
-      .sort({ updatedAt: -1 });
+    const chats = await populateChat(
+      Chat.find({ participants: req.user.userId })
+    ).sort({ updatedAt: -1 });
 
-    res.status(200).json(chats);
+    // Attach this user's unread count to each chat
+    const result = chats.map(chat => {
+      const obj = chat.toObject();
+      obj.unreadCount = chat.unreadCounts?.get(req.user.userId.toString()) || 0;
+      return obj;
+    });
+
+    res.status(200).json(result);
   } catch (error) {
     res.status(500).json({ message: 'Server error fetching chats', error: error.message });
   }
 });
 
-// POST /api/chats - create or find existing direct chat
+// POST /api/chats
 router.post('/', async (req, res) => {
   try {
     const { participantId } = req.body;
+    if (!participantId) return res.status(400).json({ message: 'participantId is required' });
 
-    if (!participantId) {
-      return res.status(400).json({ message: 'participantId is required' });
-    }
-
-    // Check if direct chat already exists between both users
-    const existingChat = await Chat.findOne({
+    let chat = await populateChat(Chat.findOne({
       isGroup: false,
       participants: { $all: [req.user.userId, participantId], $size: 2 }
-    })
-      .populate('participants', 'name avatarColor online lastSeen')
-      .populate({
-        path: 'lastMessage',
-        populate: {
-          path: 'sender',
-          select: 'name avatarColor'
-        }
-      });
+    }));
 
-    if (existingChat) {
-      return res.status(200).json(existingChat);
+    if (!chat) {
+      const newChat = await Chat.create({ participants: [req.user.userId, participantId], isGroup: false });
+      chat = await populateChat(Chat.findById(newChat._id));
     }
 
-    const newChat = await Chat.create({
-      participants: [req.user.userId, participantId],
-      isGroup: false
-    });
-
-    const populatedChat = await Chat.findById(newChat._id)
-      .populate('participants', 'name avatarColor online lastSeen')
-      .populate({
-        path: 'lastMessage',
-        populate: {
-          path: 'sender',
-          select: 'name avatarColor'
-        }
-      });
-
-    res.status(201).json(populatedChat);
+    const obj = chat.toObject();
+    obj.unreadCount = chat.unreadCounts?.get(req.user.userId.toString()) || 0;
+    res.status(200).json(obj);
   } catch (error) {
     res.status(500).json({ message: 'Server error creating chat', error: error.message });
   }
 });
 
-// GET /api/chats/:id/messages - get all messages for a chat
+// GET /api/chats/:id/messages
 router.get('/:id/messages', async (req, res) => {
   try {
-    const chat = await Chat.findOne({
-      _id: req.params.id,
-      participants: req.user.userId
-    });
-
-    if (!chat) {
-      return res.status(404).json({ message: 'Chat not found or access denied' });
-    }
+    const chat = await Chat.findOne({ _id: req.params.id, participants: req.user.userId });
+    if (!chat) return res.status(404).json({ message: 'Chat not found or access denied' });
 
     const messages = await Message.find({ chatId: req.params.id })
       .populate('sender', 'name avatarColor')
@@ -98,41 +71,32 @@ router.get('/:id/messages', async (req, res) => {
   }
 });
 
-// POST /api/chats/:id/messages - send a message
+// POST /api/chats/:id/messages
 router.post('/:id/messages', async (req, res) => {
   try {
     const { text } = req.body;
+    if (!text) return res.status(400).json({ message: 'Message text is required' });
 
-    if (!text) {
-      return res.status(400).json({ message: 'Message text is required' });
-    }
+    const chat = await Chat.findOne({ _id: req.params.id, participants: req.user.userId });
+    if (!chat) return res.status(404).json({ message: 'Chat not found or access denied' });
 
-    const chat = await Chat.findOne({
-      _id: req.params.id,
-      participants: req.user.userId
+    const message = await Message.create({ chatId: req.params.id, sender: req.user.userId, text });
+
+    // Increment unread count for every participant except sender
+    const unreadUpdate = {};
+    chat.participants.forEach(p => {
+      if (p.toString() !== req.user.userId.toString()) {
+        unreadUpdate[`unreadCounts.${p}`] = 1;
+      }
     });
-
-    if (!chat) {
-      return res.status(404).json({ message: 'Chat not found or access denied' });
-    }
-
-    const message = await Message.create({
-      chatId: req.params.id,
-      sender: req.user.userId,
-      text
-    });
-
-    // Update chat's lastMessage and updatedAt
     await Chat.findByIdAndUpdate(req.params.id, {
+      $inc: unreadUpdate,
       lastMessage: message._id,
       updatedAt: new Date()
     });
 
-    const populatedMessage = await Message.findById(message._id)
-      .populate('sender', 'name avatarColor');
+    const populatedMessage = await Message.findById(message._id).populate('sender', 'name avatarColor');
 
-    // Emit to the chat room (for users with chat open)
-    // AND to each participant's personal room (for users on chats list or background)
     const io = req.app.get('io');
     if (io) {
       io.to(`chat_${req.params.id}`).emit('new_message', populatedMessage);
@@ -146,6 +110,38 @@ router.post('/:id/messages', async (req, res) => {
     res.status(201).json(populatedMessage);
   } catch (error) {
     res.status(500).json({ message: 'Server error sending message', error: error.message });
+  }
+});
+
+// PATCH /api/chats/:id/read — mark all messages as read, reset unread count
+router.patch('/:id/read', async (req, res) => {
+  try {
+    const chat = await Chat.findOne({ _id: req.params.id, participants: req.user.userId });
+    if (!chat) return res.status(404).json({ message: 'Chat not found' });
+
+    // Mark all messages from others as read
+    await Message.updateMany(
+      { chatId: req.params.id, sender: { $ne: req.user.userId }, status: { $ne: 'read' } },
+      { status: 'read' }
+    );
+
+    // Reset this user's unread count to 0
+    await Chat.findByIdAndUpdate(req.params.id, {
+      [`unreadCounts.${req.user.userId}`]: 0
+    });
+
+    // Notify everyone in chat that this user read the messages (for blue ticks)
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`chat_${req.params.id}`).emit('messages_read', {
+        chatId: req.params.id,
+        readBy: req.user.userId
+      });
+    }
+
+    res.status(200).json({ message: 'Messages marked as read' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error marking as read', error: error.message });
   }
 });
 
