@@ -93,16 +93,31 @@ class ChatListItem extends StatelessWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: Text(
-                          lastMessage?.text ?? 'No messages yet',
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                            color: kOnSurfaceVariant,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        child: lastMessage?.type == 'image'
+                            ? Row(
+                                children: [
+                                  const Icon(Icons.photo, size: 16, color: kOnSurfaceVariant),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Photo',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w400,
+                                      color: kOnSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : Text(
+                                lastMessage?.text ?? 'No messages yet',
+                                style: GoogleFonts.inter(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w400,
+                                  color: kOnSurfaceVariant,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                       ),
                       if (unreadCount > 0) ...[
                         const SizedBox(width: 8),

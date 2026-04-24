@@ -34,6 +34,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   bool _isTypingInternally = false;
   bool _showEmojiPicker = false;
   bool _isUploadingMedia = false;
+  bool _isLoadingMore = false;
   Timer? _typingTimer;
 
   @override
@@ -49,6 +50,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         setState(() => _showEmojiPicker = false);
       }
     });
+    _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadMessages();
     });
@@ -64,6 +66,31 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _scrollController.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels < 100 && !_isLoadingMore) {
+      _loadMoreMessages();
+    }
+  }
+
+  Future<void> _loadMoreMessages() async {
+    final chatProvider = context.read<ChatProvider>();
+    if (!chatProvider.hasMoreMessages(widget.chat.id)) return;
+    if (_isLoadingMore) return;
+
+    setState(() => _isLoadingMore = true);
+    final oldMaxExtent = _scrollController.position.maxScrollExtent;
+
+    await chatProvider.loadMoreMessages(widget.chat.id);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        final delta = _scrollController.position.maxScrollExtent - oldMaxExtent;
+        _scrollController.jumpTo(_scrollController.offset + delta);
+      }
+      if (mounted) setState(() => _isLoadingMore = false);
+    });
   }
 
   Future<void> _loadMessages() async {
@@ -288,23 +315,41 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                   child: ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-                    itemCount: messages.length + 1 + (liveTypingText.isNotEmpty ? 1 : 0),
+                    itemCount: (_isLoadingMore ? 1 : 0) + 1 + messages.length + (liveTypingText.isNotEmpty ? 1 : 0),
                     itemBuilder: (context, index) {
-                      if (index == 0) {
+                      int offset = 0;
+
+                      if (_isLoadingMore) {
+                        if (index == 0) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            child: Center(
+                              child: SizedBox(
+                                width: 20, height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF006A4E)),
+                              ),
+                            ),
+                          );
+                        }
+                        offset = 1;
+                      }
+
+                      if (index - offset == 0) {
                         return _buildDateSeparator(messages.isNotEmpty
                           ? messages[0].createdAt
                           : DateTime.now());
                       }
 
-                      if (liveTypingText.isNotEmpty && index == messages.length + 1) {
+                      if (liveTypingText.isNotEmpty && index - offset == messages.length + 1) {
                         return _buildLiveTypingBubble(liveTypingText);
                       }
 
-                      final message = messages[index - 1];
+                      final msgIndex = index - offset - 1;
+                      final message = messages[msgIndex];
                       final isMe = message.sender.id == currentUserId;
                       bool showTail = true;
-                      if (index > 1) {
-                        showTail = messages[index - 2].sender.id != message.sender.id;
+                      if (msgIndex > 0) {
+                        showTail = messages[msgIndex - 1].sender.id != message.sender.id;
                       }
                       return MessageBubble(message: message, isMe: isMe, showTail: showTail);
                     },

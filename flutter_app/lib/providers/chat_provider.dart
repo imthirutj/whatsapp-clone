@@ -12,6 +12,8 @@ class ChatProvider extends ChangeNotifier {
   final Map<String, List<Message>> _messages = {};
   final Map<String, bool> _typingStatus = {};
   final Map<String, String> _liveTypingText = {};
+  final Map<String, bool> _hasMoreMessages = {};
+  final Map<String, bool> _isLoadingMore = {};
   String? _activeChatId;
   bool _isLoading = false;
   bool _isLoadingUsers = false;
@@ -24,6 +26,9 @@ class ChatProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isLoadingUsers => _isLoadingUsers;
   String? get error => _error;
+
+  bool hasMoreMessages(String chatId) => _hasMoreMessages[chatId] ?? false;
+  bool isLoadingMoreMessages(String chatId) => _isLoadingMore[chatId] ?? false;
 
   int get totalUnreadCount =>
       _chats.fold(0, (sum, chat) => sum + chat.unreadCount);
@@ -144,22 +149,53 @@ class ChatProvider extends ChangeNotifier {
     _setLoading(true);
     _setError(null);
     try {
-      final data = await _api.get('/chats/$chatId/messages');
+      final data = await _api.get('/chats/$chatId/messages?limit=50');
       final messageList = data is List
           ? data
           : (data['messages'] as List<dynamic>? ?? []);
+      final hasMore = data is Map ? (data['hasMore'] as bool? ?? false) : false;
       final msgs = messageList
           .whereType<Map<String, dynamic>>()
           .map((m) => Message.fromJson(m))
           .toList();
       msgs.sort((a, b) => a.createdAt.compareTo(b.createdAt));
       _messages[chatId] = msgs;
+      _hasMoreMessages[chatId] = hasMore;
       _socket.joinChat(chatId);
     } catch (e) {
       _setError(e.toString());
     } finally {
       _setLoading(false);
     }
+  }
+
+  Future<void> loadMoreMessages(String chatId) async {
+    if (_isLoadingMore[chatId] == true) return;
+    if (!(_hasMoreMessages[chatId] ?? false)) return;
+    final msgs = _messages[chatId];
+    if (msgs == null || msgs.isEmpty) return;
+
+    _isLoadingMore[chatId] = true;
+    notifyListeners();
+
+    try {
+      final oldestId = msgs.first.id;
+      final data = await _api.get('/chats/$chatId/messages?limit=50&before=$oldestId');
+      final messageList = data is List
+          ? data
+          : (data['messages'] as List<dynamic>? ?? []);
+      final hasMore = data is Map ? (data['hasMore'] as bool? ?? false) : false;
+      final olderMsgs = messageList
+          .whereType<Map<String, dynamic>>()
+          .map((m) => Message.fromJson(m))
+          .toList();
+      olderMsgs.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      _messages[chatId] = [...olderMsgs, ..._messages[chatId]!];
+      _hasMoreMessages[chatId] = hasMore;
+    } catch (_) {}
+
+    _isLoadingMore[chatId] = false;
+    notifyListeners();
   }
 
   Future<Message?> sendMessage(String chatId, String text, User sender, {String type = 'text'}) async {
@@ -423,6 +459,8 @@ class ChatProvider extends ChangeNotifier {
     _messages.clear();
     _typingStatus.clear();
     _liveTypingText.clear();
+    _hasMoreMessages.clear();
+    _isLoadingMore.clear();
     _isLoading = false;
     _error = null;
     notifyListeners();

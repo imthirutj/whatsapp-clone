@@ -55,17 +55,32 @@ router.post('/', async (req, res) => {
   }
 });
 
-// GET /api/chats/:id/messages
+// GET /api/chats/:id/messages?limit=50&before=<messageId>
 router.get('/:id/messages', async (req, res) => {
   try {
     const chat = await Chat.findOne({ _id: req.params.id, participants: req.user.userId });
     if (!chat) return res.status(404).json({ message: 'Chat not found or access denied' });
 
-    const messages = await Message.find({ chatId: req.params.id })
-      .populate('sender', 'name avatarColor')
-      .sort({ createdAt: 1 });
+    const limit = Math.min(parseInt(req.query.limit) || 50, 100);
+    const before = req.query.before;
 
-    res.status(200).json(messages);
+    const query = { chatId: req.params.id };
+    if (before) {
+      const anchor = await Message.findById(before).select('createdAt');
+      if (anchor) query.createdAt = { $lt: anchor.createdAt };
+    }
+
+    const messages = await Message.find(query)
+      .populate('sender', 'name avatarColor')
+      .sort({ createdAt: -1 }) // newest first so limit cuts off oldest
+      .limit(limit);
+
+    messages.reverse(); // return in chronological order
+
+    res.status(200).json({
+      messages,
+      hasMore: messages.length === limit,
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server error fetching messages', error: error.message });
   }
