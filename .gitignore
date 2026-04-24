@@ -4,7 +4,8 @@
 .vscode/
 .idea/
 *.swp
-*.lock
+
+# Lock files
 package-lock.json
 pubspec.lock
 
@@ -15,21 +16,16 @@ backend/*.log
 backend/dist/
 
 # Flutter/Dart
-.dart_tool/
-.packages
-.flutter-plugins
-.flutter-plugins-dependencies
-.pub-cache/
-.pub/
-build/
-flutter_app/.dart_tool/
-flutter_app/.packages
-flutter_app/.flutter-plugins
-flutter_app/.flutter-plugins-dependencies
-flutter_app/build/
+**/.dart_tool/
+**/.packages
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.pub-cache/
+**/.pub/
+**/build/
+
+# Web build artifacts
 flutter_app/web/
-!flutter_app/web/index.html
-!flutter_app/web/manifest.json
 
 # Tooling
 test-db.js
