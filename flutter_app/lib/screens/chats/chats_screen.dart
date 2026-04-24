@@ -49,7 +49,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
           style: GoogleFonts.inter(
             fontSize: 22,
             fontWeight: FontWeight.w400,
-            color: kOnSurface,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         actions: [

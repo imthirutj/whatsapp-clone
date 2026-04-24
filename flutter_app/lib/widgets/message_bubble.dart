@@ -33,14 +33,18 @@ class MessageBubble extends StatelessWidget {
     return '$h:$m';
   }
 
-  Widget _buildStatusRow(bool isMe, String timeStr, bool isRead, bool isDelivered) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final subTextColor = isMe 
+        ? Colors.white.withValues(alpha: 0.7) 
+        : (isDark ? kOnSurfaceVariantDark : const Color(0xFF667781));
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           timeStr,
           style: GoogleFonts.inter(
-            color: isMe ? Colors.white.withValues(alpha: 0.7) : const Color(0xFF667781),
+            color: subTextColor,
             fontSize: 11,
           ),
         ),
@@ -56,8 +60,10 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  BoxDecoration _bubbleDecoration(bool isMe) => BoxDecoration(
-    color: isMe ? const Color(0xFF005D4B) : Colors.white,
+  BoxDecoration _bubbleDecoration(bool isMe, bool isDark) => BoxDecoration(
+    color: isMe 
+        ? (isDark ? kOutgoingBubbleDark : const Color(0xFF005D4B)) 
+        : (isDark ? kIncomingBubbleDark : Colors.white),
     borderRadius: BorderRadius.only(
       topLeft: Radius.circular(showTail && !isMe ? 2 : 16),
       topRight: Radius.circular(showTail && isMe ? 2 : 16),
@@ -69,13 +75,13 @@ class MessageBubble extends StatelessWidget {
     ],
   );
 
-  Widget _buildReplyQuote(Message reply, bool isMe, {VoidCallback? onTap}) {
+  Widget _buildReplyQuote(Message reply, bool isMe, bool isDark, {VoidCallback? onTap}) {
     final quoteBg = isMe
         ? Colors.white.withValues(alpha: 0.15)
-        : const Color(0xFF006A4E).withValues(alpha: 0.08);
-    final barColor = isMe ? Colors.white.withValues(alpha: 0.6) : const Color(0xFF006A4E);
-    final textColor = isMe ? Colors.white.withValues(alpha: 0.9) : const Color(0xFF111B21);
-    final subTextColor = isMe ? Colors.white.withValues(alpha: 0.7) : const Color(0xFF667781);
+        : (isDark ? Colors.black.withValues(alpha: 0.2) : const Color(0xFF006A4E).withValues(alpha: 0.08));
+    final barColor = isMe ? Colors.white.withValues(alpha: 0.6) : (isDark ? kPrimaryDark : const Color(0xFF006A4E));
+    final textColor = isMe ? Colors.white.withValues(alpha: 0.9) : (isDark ? kOnSurfaceDark : const Color(0xFF111B21));
+    final subTextColor = isMe ? Colors.white.withValues(alpha: 0.7) : (isDark ? kOnSurfaceVariantDark : const Color(0xFF667781));
 
     final previewText = reply.type == 'image' ? '📷 Photo' : reply.text;
 
@@ -137,9 +143,9 @@ class MessageBubble extends StatelessWidget {
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: isDark ? kIncomingBubbleDark : Colors.white,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFF006A4E).withValues(alpha: 0.3)),
+              border: Border.all(color: kPrimary.withValues(alpha: 0.3)),
               boxShadow: [
                 BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 2),
               ],
@@ -178,9 +184,11 @@ class MessageBubble extends StatelessWidget {
     final isDelivered = message.status == 'delivered';
     final aggregatedReactions = _aggregateReactions();
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
-      color: isHighlighted ? const Color(0xFF006A4E).withValues(alpha: 0.12) : Colors.transparent,
+      color: isHighlighted ? kPrimary.withValues(alpha: 0.12) : Colors.transparent,
       padding: EdgeInsets.only(
         left: isMe ? 64 : 12,
         right: isMe ? 12 : 64,
@@ -202,21 +210,21 @@ class MessageBubble extends StatelessWidget {
                       timeStr: timeStr,
                       isRead: isRead,
                       isDelivered: isDelivered,
-                      decoration: _bubbleDecoration(isMe),
+                      decoration: _bubbleDecoration(isMe, isDark),
                       statusRow: _buildStatusRow(isMe, timeStr, isRead, isDelivered),
                       replyQuote: message.replyTo != null
-                          ? _buildReplyQuote(message.replyTo!, isMe, onTap: onReplyTap)
+                          ? _buildReplyQuote(message.replyTo!, isMe, isDark, onTap: onReplyTap)
                           : null,
                     )
                   : Container(
-                      decoration: _bubbleDecoration(isMe),
+                      decoration: _bubbleDecoration(isMe, isDark),
                       padding: const EdgeInsets.fromLTRB(12, 8, 10, 6),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           if (message.replyTo != null)
-                            _buildReplyQuote(message.replyTo!, isMe, onTap: onReplyTap),
+                            _buildReplyQuote(message.replyTo!, isMe, isDark, onTap: onReplyTap),
                           Wrap(
                             alignment: WrapAlignment.end,
                             crossAxisAlignment: WrapCrossAlignment.end,
@@ -226,7 +234,7 @@ class MessageBubble extends StatelessWidget {
                               Text(
                                 message.text,
                                 style: GoogleFonts.inter(
-                                  color: isMe ? Colors.white : const Color(0xFF111B21),
+                                  color: isMe ? Colors.white : (isDark ? kOnSurfaceDark : const Color(0xFF111B21)),
                                   fontSize: 15,
                                   fontWeight: FontWeight.w400,
                                   height: 1.4,
@@ -262,10 +270,12 @@ class _MessageOptionsSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 32),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? kSurfaceVariantDark : Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 12),
@@ -286,7 +296,7 @@ class _MessageOptionsSheet extends StatelessWidget {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF0F2F5),
+                      color: isDark ? Colors.black.withValues(alpha: 0.2) : const Color(0xFFF0F2F5),
                       shape: BoxShape.circle,
                     ),
                     alignment: Alignment.center,
@@ -312,7 +322,7 @@ class _MessageOptionsSheet extends StatelessWidget {
                     style: GoogleFonts.inter(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
-                      color: const Color(0xFF111B21),
+                      color: isDark ? kOnSurfaceDark : const Color(0xFF111B21),
                     ),
                   ),
                 ],
@@ -393,7 +403,11 @@ class _ImageBubbleState extends State<_ImageBubble> {
   }
 
   @override
-  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final subTextColor = widget.isMe 
+        ? Colors.white.withValues(alpha: 0.7) 
+        : (isDark ? kOnSurfaceVariantDark : const Color(0xFF667781));
+
     return GestureDetector(
       onTap: _loadAndShow,
       child: Container(
@@ -412,30 +426,26 @@ class _ImageBubbleState extends State<_ImageBubble> {
               decoration: BoxDecoration(
                 color: widget.isMe
                     ? Colors.white.withValues(alpha: 0.12)
-                    : Colors.black.withValues(alpha: 0.06),
+                    : (isDark ? Colors.black.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.06)),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Center(
                 child: _loading
-                    ? const CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF006A4E))
+                    ? const CircularProgressIndicator(strokeWidth: 2, color: kPrimary)
                     : Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
                             Icons.photo,
                             size: 36,
-                            color: widget.isMe
-                                ? Colors.white.withValues(alpha: 0.7)
-                                : const Color(0xFF667781),
+                            color: subTextColor,
                           ),
                           const SizedBox(height: 6),
                           Text(
                             'Tap to view',
                             style: GoogleFonts.inter(
                               fontSize: 12,
-                              color: widget.isMe
-                                  ? Colors.white.withValues(alpha: 0.7)
-                                  : const Color(0xFF667781),
+                              color: subTextColor,
                             ),
                           ),
                         ],

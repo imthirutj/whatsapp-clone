@@ -234,10 +234,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
         }
 
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+
         return Scaffold(
-          backgroundColor: const Color(0xFFEFEAE2), // Matches Image 2 creamy beige
+          backgroundColor: isDark ? kChatBackgroundDark : kChatBackground,
           appBar: AppBar(
-            backgroundColor: const Color(0xFFEFEAE2),
+            backgroundColor: isDark ? kSurfaceDark : kChatBackground,
             elevation: 0,
             leadingWidth: 40,
             leading: IconButton(
@@ -262,7 +264,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                         style: GoogleFonts.inter(
                           fontSize: 17,
                           fontWeight: FontWeight.w600,
-                          color: kOnSurface,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -366,22 +368,22 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                     config: ep.Config(
                       height: 280,
                       emojiViewConfig: ep.EmojiViewConfig(
-                        backgroundColor: const Color(0xFFEFEAE2),
+                        backgroundColor: isDark ? kSurfaceDark : const Color(0xFFEFEAE2),
                         columns: 8,
                         emojiSizeMax: 28 * (foundation.defaultTargetPlatform == TargetPlatform.iOS ? 1.20 : 1.0),
                       ),
-                      categoryViewConfig: const ep.CategoryViewConfig(
-                        indicatorColor: Color(0xFF006A4E),
-                        iconColorSelected: Color(0xFF006A4E),
-                        iconColor: Color(0xFF667781),
-                        backgroundColor: Color(0xFFEFEAE2),
+                      categoryViewConfig: ep.CategoryViewConfig(
+                        indicatorColor: kPrimary,
+                        iconColorSelected: kPrimary,
+                        iconColor: const Color(0xFF667781),
+                        backgroundColor: isDark ? kSurfaceDark : const Color(0xFFEFEAE2),
                       ),
-                      bottomActionBarConfig: const ep.BottomActionBarConfig(
-                        backgroundColor: Color(0xFFEFEAE2),
-                        buttonColor: Color(0xFF006A4E),
+                      bottomActionBarConfig: ep.BottomActionBarConfig(
+                        backgroundColor: isDark ? kSurfaceDark : const Color(0xFFEFEAE2),
+                        buttonColor: kPrimary,
                       ),
-                      searchViewConfig: const ep.SearchViewConfig(
-                        backgroundColor: Color(0xFFEFEAE2),
+                      searchViewConfig: ep.SearchViewConfig(
+                        backgroundColor: isDark ? kSurfaceDark : const Color(0xFFEFEAE2),
                       ),
                     ),
                   ),
@@ -399,9 +401,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     return Container(
       margin: const EdgeInsets.fromLTRB(8, 0, 8, 4),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? kSurfaceVariantDark : Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border(left: BorderSide(color: const Color(0xFF006A4E), width: 3)),
+        border: Border(left: BorderSide(color: kPrimary, width: 3)),
         boxShadow: [
           BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 2),
         ],
@@ -462,7 +464,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           Expanded(
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: isDark ? kSurfaceVariantDark : Colors.white,
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
@@ -548,14 +550,14 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         margin: const EdgeInsets.only(left: 8, right: 60, bottom: 2, top: 2),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.85),
+          color: isDark ? kSurfaceVariantDark.withValues(alpha: 0.85) : Colors.white.withValues(alpha: 0.85),
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(18),
             topRight: Radius.circular(18),
             bottomRight: Radius.circular(18),
             bottomLeft: Radius.circular(4),
           ),
-          border: Border.all(color: const Color(0xFF006A4E).withValues(alpha: 0.4), width: 1.2),
+          border: Border.all(color: kPrimary.withValues(alpha: 0.4), width: 1.2),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),

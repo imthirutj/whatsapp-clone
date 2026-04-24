@@ -53,9 +53,9 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           bottomNavigationBar: Container(
             decoration: BoxDecoration(
-              color: kSurface,
+              color: Theme.of(context).colorScheme.surface,
               border: Border(
-                top: BorderSide(color: Colors.grey.shade200, width: 0.5),
+                top: BorderSide(color: Theme.of(context).dividerTheme.color ?? Colors.grey.shade200, width: 0.5),
               ),
             ),
             child: SafeArea(
@@ -122,7 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Icon(
                   isSelected ? activeIcon : icon,
-                  color: isSelected ? kOnSurface : kOnSurfaceVariant,
+                  color: isSelected ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurfaceVariant,
                   size: 26,
                 ),
                 if (badgeCount > 0)
@@ -135,7 +135,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       decoration: BoxDecoration(
                         color: badgeColor,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1.5),
+                        border: Border.all(color: Theme.of(context).colorScheme.surface, width: 1.5),
                       ),
                       alignment: Alignment.center,
                       child: Text(
@@ -156,7 +156,7 @@ class _HomeScreenState extends State<HomeScreen> {
               style: GoogleFonts.inter(
                 fontSize: 11,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                color: isSelected ? kOnSurface : kOnSurfaceVariant,
+                color: isSelected ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ],

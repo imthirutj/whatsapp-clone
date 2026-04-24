@@ -29,6 +29,8 @@ class WhatsAppCloneApp extends StatelessWidget {
         title: 'SchatApp',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: ThemeMode.system,
         home: const AppEntryPoint(),
       ),
     );

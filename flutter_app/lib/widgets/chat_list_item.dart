@@ -57,7 +57,7 @@ class ChatListItem extends StatelessWidget {
                           style: GoogleFonts.inter(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
-                            color: kOnSurface,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -74,7 +74,7 @@ class ChatListItem extends StatelessWidget {
                               size: 16,
                               color: lastMessage.status == 'read'
                                   ? const Color(0xFF53BDEB)
-                                  : kOnSurfaceVariant,
+                                  : Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                           ),
                         Text(
@@ -82,7 +82,7 @@ class ChatListItem extends StatelessWidget {
                           style: GoogleFonts.inter(
                             fontSize: 12,
                             fontWeight: FontWeight.w400,
-                            color: unreadCount > 0 ? kPrimary : kOnSurfaceVariant,
+                            color: unreadCount > 0 ? kPrimary : Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -103,7 +103,7 @@ class ChatListItem extends StatelessWidget {
                                     style: GoogleFonts.inter(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w400,
-                                      color: kOnSurfaceVariant,
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                                     ),
                                   ),
                                 ],
@@ -113,7 +113,7 @@ class ChatListItem extends StatelessWidget {
                                 style: GoogleFonts.inter(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w400,
-                                  color: kOnSurfaceVariant,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,

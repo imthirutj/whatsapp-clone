@@ -26,3 +26,13 @@ const List<Color> kAvatarColors = [
   Color(0xFFF4511E), // Deep Orange
   Color(0xFF039BE5), // Light Blue
 ];
+
+// Dark Mode Colors
+const Color kPrimaryDark = Color(0xFF00A884);
+const Color kSurfaceDark = Color(0xFF0B141B);
+const Color kSurfaceVariantDark = Color(0xFF202C33);
+const Color kOnSurfaceDark = Color(0xFFE9EDEF);
+const Color kOnSurfaceVariantDark = Color(0xFF8696A0);
+const Color kChatBackgroundDark = Color(0xFF0B141B);
+const Color kOutgoingBubbleDark = Color(0xFF005C4B);
+const Color kIncomingBubbleDark = Color(0xFF202C33);
