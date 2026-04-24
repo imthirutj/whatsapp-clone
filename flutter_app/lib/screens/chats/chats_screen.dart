@@ -306,8 +306,17 @@ class _ContactPickerSheetState extends State<_ContactPickerSheet> {
                       contentPadding: const EdgeInsets.symmetric(vertical: 0),
                     ),
                     textInputAction: TextInputAction.search,
-                    onChanged: (v) => setState(() => _query = v),
-                    onSubmitted: (v) => context.read<ChatProvider>().searchUsers(v),
+                    onChanged: (v) {
+                      setState(() => _query = v);
+                      _debounce?.cancel();
+                      _debounce = Timer(const Duration(milliseconds: 500), () {
+                        context.read<ChatProvider>().searchUsers(v);
+                      });
+                    },
+                    onSubmitted: (v) {
+                      _debounce?.cancel();
+                      context.read<ChatProvider>().searchUsers(v);
+                    },
                   ),
                 ),
                 const Divider(height: 1),
