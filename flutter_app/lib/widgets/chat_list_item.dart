@@ -63,7 +63,20 @@ class ChatListItem extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (lastMessage != null)
+                      if (lastMessage != null) ...[
+                        if (lastMessage.sender.id == currentUserId)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 2),
+                            child: Icon(
+                              lastMessage.status == 'read' || lastMessage.status == 'delivered'
+                                  ? Icons.done_all
+                                  : Icons.done,
+                              size: 16,
+                              color: lastMessage.status == 'read'
+                                  ? const Color(0xFF53BDEB)
+                                  : kOnSurfaceVariant,
+                            ),
+                          ),
                         Text(
                           TimeUtils.formatChatTime(lastMessage.createdAt),
                           style: GoogleFonts.inter(
@@ -72,6 +85,7 @@ class ChatListItem extends StatelessWidget {
                             color: unreadCount > 0 ? kPrimary : kOnSurfaceVariant,
                           ),
                         ),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 4),

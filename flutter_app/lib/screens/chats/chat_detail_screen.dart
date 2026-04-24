@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:emoji_picker_flutter/emoji_picker_flutter.dart' as ep;
+import 'package:flutter/foundation.dart' as foundation;
 import '../../models/chat.dart';
 import '../../models/message.dart';
 import '../../providers/auth_provider.dart';
@@ -23,7 +25,9 @@ class ChatDetailScreen extends StatefulWidget {
 class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
+  final _focusNode = FocusNode();
   bool _isTypingInternally = false;
+  bool _showEmojiPicker = false;
   Timer? _typingTimer;
 
   @override
@@ -33,6 +37,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       setState(() {
         _isTypingInternally = _messageController.text.isNotEmpty;
       });
+    });
+    _focusNode.addListener(() {
+      if (_focusNode.hasFocus && _showEmojiPicker) {
+        setState(() => _showEmojiPicker = false);
+      }
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadMessages();
@@ -47,6 +56,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     chatProvider.leaveChat(widget.chat.id);
     _messageController.dispose();
     _scrollController.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -86,6 +96,16 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       chatProvider.sendTypingStatus(widget.chat.id, false);
       chatProvider.sendLiveTypingText(widget.chat.id, '');
     });
+  }
+
+  void _toggleEmojiPicker() {
+    if (_showEmojiPicker) {
+      setState(() => _showEmojiPicker = false);
+      _focusNode.requestFocus();
+    } else {
+      _focusNode.unfocus();
+      setState(() => _showEmojiPicker = true);
+    }
   }
 
   Future<void> _sendMessage() async {
@@ -169,32 +189,65 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           body: Column(
             children: [
               Expanded(
-                child: ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-                  itemCount: messages.length + 1 + (liveTypingText.isNotEmpty ? 1 : 0),
-                  itemBuilder: (context, index) {
-                    if (index == 0) {
-                      return _buildDateSeparator(messages.isNotEmpty
-                        ? messages[0].createdAt
-                        : DateTime.now());
-                    }
-
-                    if (liveTypingText.isNotEmpty && index == messages.length + 1) {
-                      return _buildLiveTypingBubble(liveTypingText);
-                    }
-
-                    final message = messages[index - 1];
-                    final isMe = message.sender.id == currentUserId;
-                    bool showTail = true;
-                    if (index > 1) {
-                      showTail = messages[index - 2].sender.id != message.sender.id;
-                    }
-                    return MessageBubble(message: message, isMe: isMe, showTail: showTail);
+                child: GestureDetector(
+                  onTap: () {
+                    if (_showEmojiPicker) setState(() => _showEmojiPicker = false);
                   },
+                  child: ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                    itemCount: messages.length + 1 + (liveTypingText.isNotEmpty ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (index == 0) {
+                        return _buildDateSeparator(messages.isNotEmpty
+                          ? messages[0].createdAt
+                          : DateTime.now());
+                      }
+
+                      if (liveTypingText.isNotEmpty && index == messages.length + 1) {
+                        return _buildLiveTypingBubble(liveTypingText);
+                      }
+
+                      final message = messages[index - 1];
+                      final isMe = message.sender.id == currentUserId;
+                      bool showTail = true;
+                      if (index > 1) {
+                        showTail = messages[index - 2].sender.id != message.sender.id;
+                      }
+                      return MessageBubble(message: message, isMe: isMe, showTail: showTail);
+                    },
+                  ),
                 ),
               ),
               _buildInputArea(),
+              if (_showEmojiPicker)
+                SizedBox(
+                  height: 280,
+                  child: ep.EmojiPicker(
+                    textEditingController: _messageController,
+                    config: ep.Config(
+                      height: 280,
+                      emojiViewConfig: ep.EmojiViewConfig(
+                        backgroundColor: const Color(0xFFEFEAE2),
+                        columns: 8,
+                        emojiSizeMax: 28 * (foundation.defaultTargetPlatform == TargetPlatform.iOS ? 1.20 : 1.0),
+                      ),
+                      categoryViewConfig: const ep.CategoryViewConfig(
+                        indicatorColor: Color(0xFF006A4E),
+                        iconColorSelected: Color(0xFF006A4E),
+                        iconColor: Color(0xFF667781),
+                        backgroundColor: Color(0xFFEFEAE2),
+                      ),
+                      bottomActionBarConfig: const ep.BottomActionBarConfig(
+                        backgroundColor: Color(0xFFEFEAE2),
+                        buttonColor: Color(0xFF006A4E),
+                      ),
+                      searchViewConfig: const ep.SearchViewConfig(
+                        backgroundColor: Color(0xFFEFEAE2),
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         );
@@ -224,12 +277,16 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.emoji_emotions_outlined, color: kOnSurfaceVariant),
-                    onPressed: () {},
+                    icon: Icon(
+                      _showEmojiPicker ? Icons.keyboard : Icons.emoji_emotions_outlined,
+                      color: kOnSurfaceVariant,
+                    ),
+                    onPressed: _toggleEmojiPicker,
                   ),
                   Expanded(
                     child: TextField(
                       controller: _messageController,
+                      focusNode: _focusNode,
                       onChanged: _handleTypingStatus,
                       style: GoogleFonts.inter(fontSize: 16),
                       maxLines: 5,

@@ -57,10 +57,21 @@ class ChatProvider extends ChangeNotifier {
   void _handleMessagesRead(Map<String, dynamic> data) {
     final chatId = data['chatId']?.toString();
     if (chatId == null) return;
-    // Mark all messages in this chat as read
+
+    // Mark all messages in message list as read
     final msgs = _messages[chatId];
-    if (msgs == null) return;
-    _messages[chatId] = msgs.map((m) => m.copyWith(status: 'read')).toList();
+    if (msgs != null) {
+      _messages[chatId] = msgs.map((m) => m.copyWith(status: 'read')).toList();
+    }
+
+    // Also update lastMessage on the chat so the chat list shows blue ticks
+    final chatIndex = _chats.indexWhere((c) => c.id == chatId);
+    if (chatIndex != -1 && _chats[chatIndex].lastMessage != null) {
+      _chats[chatIndex] = _chats[chatIndex].copyWith(
+        lastMessage: _chats[chatIndex].lastMessage!.copyWith(status: 'read'),
+      );
+    }
+
     notifyListeners();
   }
 
@@ -299,14 +310,24 @@ class ChatProvider extends ChangeNotifier {
     final status = data['status']?.toString();
     if (chatId == null || messageId == null || status == null) return;
 
+    // Update in message list
     final chatMessages = _messages[chatId];
-    if (chatMessages == null) return;
-
-    final index = chatMessages.indexWhere((m) => m.id == messageId);
-    if (index != -1) {
-      _messages[chatId]![index] = chatMessages[index].copyWith(status: status);
-      notifyListeners();
+    if (chatMessages != null) {
+      final index = chatMessages.indexWhere((m) => m.id == messageId);
+      if (index != -1) {
+        _messages[chatId]![index] = chatMessages[index].copyWith(status: status);
+      }
     }
+
+    // Also update lastMessage on the chat so the chat list tick stays current
+    final chatIndex = _chats.indexWhere((c) => c.id == chatId);
+    if (chatIndex != -1 && _chats[chatIndex].lastMessage?.id == messageId) {
+      _chats[chatIndex] = _chats[chatIndex].copyWith(
+        lastMessage: _chats[chatIndex].lastMessage!.copyWith(status: status),
+      );
+    }
+
+    notifyListeners();
   }
 
   void _addOrUpdateMessage(String chatId, Message message) {
