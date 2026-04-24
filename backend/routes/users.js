@@ -18,20 +18,21 @@ router.get('/', async (req, res) => {
     }
 
     const term = q.trim();
-    const query = {
-      _id: { $ne: req.user.userId },
-      $or: [
-        { username: { $regex: `^${term}$`, $options: 'i' } },  // exact username
-        { email: term.toLowerCase() },                           // exact email
-        { username: { $regex: term, $options: 'i' } },          // partial username
-      ]
-    };
+    const orConditions = [
+      { username: term.toLowerCase() },       // exact username
+      { email: term.toLowerCase() },          // exact email
+    ];
 
     // also match by MongoDB _id if it looks like one
     const mongoose = require('mongoose');
     if (mongoose.Types.ObjectId.isValid(term)) {
-      query.$or.push({ _id: term });
+      orConditions.push({ _id: term });
     }
+
+    const query = {
+      _id: { $ne: req.user.userId },
+      $or: orConditions,
+    };
 
     const users = await User.find(query).select('-password').limit(20);
     res.status(200).json(users);

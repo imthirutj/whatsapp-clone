@@ -291,8 +291,12 @@ class _ContactPickerSheetState extends State<_ContactPickerSheet> {
                     controller: _searchController,
                     autofocus: true,
                     decoration: InputDecoration(
-                      hintText: 'Search by @username or email',
+                      hintText: 'Enter exact @username or email',
                       prefixIcon: const Icon(Icons.search, color: kPrimary),
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.arrow_forward, color: kPrimary),
+                        onPressed: () => context.read<ChatProvider>().searchUsers(_query),
+                      ),
                       filled: true,
                       fillColor: Colors.grey.shade100,
                       border: OutlineInputBorder(
@@ -301,13 +305,9 @@ class _ContactPickerSheetState extends State<_ContactPickerSheet> {
                       ),
                       contentPadding: const EdgeInsets.symmetric(vertical: 0),
                     ),
-                    onChanged: (v) {
-                      setState(() => _query = v);
-                      _debounce?.cancel();
-                      _debounce = Timer(const Duration(milliseconds: 400), () {
-                        context.read<ChatProvider>().searchUsers(v);
-                      });
-                    },
+                    textInputAction: TextInputAction.search,
+                    onChanged: (v) => setState(() => _query = v),
+                    onSubmitted: (v) => context.read<ChatProvider>().searchUsers(v),
                   ),
                 ),
                 const Divider(height: 1),
@@ -323,7 +323,8 @@ class _ContactPickerSheetState extends State<_ContactPickerSheet> {
                                   Icon(Icons.person_search,
                                       size: 56, color: Colors.grey.shade300),
                                   const SizedBox(height: 12),
-                                  Text('Search by @username or email',
+                                  Text('Type exact @username or email,\nthen press search',
+                                      textAlign: TextAlign.center,
                                       style: TextStyle(
                                           color: Colors.grey.shade500, fontSize: 14)),
                                 ],
