@@ -131,10 +131,16 @@ router.post('/:id/messages', async (req, res) => {
     const populatedMessage = await Message.findById(message._id)
       .populate('sender', 'name avatarColor');
 
-    // Emit via socket.io
+    // Emit to the chat room (for users with chat open)
+    // AND to each participant's personal room (for users on chats list or background)
     const io = req.app.get('io');
     if (io) {
       io.to(`chat_${req.params.id}`).emit('new_message', populatedMessage);
+      chat.participants.forEach(participantId => {
+        if (participantId.toString() !== req.user.userId.toString()) {
+          io.to(`user_${participantId}`).emit('new_message', populatedMessage);
+        }
+      });
     }
 
     res.status(201).json(populatedMessage);

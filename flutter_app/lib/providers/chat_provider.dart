@@ -184,7 +184,15 @@ class ChatProvider extends ChangeNotifier {
     try {
       final message = Message.fromJson(data);
       _addOrUpdateMessage(chatId, message);
-      _updateChatLastMessage(chatId, message);
+
+      // If this chat isn't in our list yet (first message from someone),
+      // reload the full chats list so it appears
+      final chatExists = _chats.any((c) => c.id == chatId);
+      if (!chatExists) {
+        loadChats();
+      } else {
+        _updateChatLastMessage(chatId, message);
+      }
     } catch (_) {
       // Invalid message data
     }

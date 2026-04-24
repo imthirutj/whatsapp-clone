@@ -61,8 +61,17 @@ const setupSocket = (io) => {
         const populatedMessage = await Message.findById(message._id)
           .populate('sender', 'name avatarColor');
 
-        // Emit to everyone in the chat room
+        const chat = await Chat.findById(chatId).select('participants');
+
+        // Emit to chat room (users with chat open) + each participant's personal room
         io.to(`chat_${chatId}`).emit('new_message', populatedMessage);
+        if (chat) {
+          chat.participants.forEach(participantId => {
+            if (participantId.toString() !== socket.userId.toString()) {
+              io.to(`user_${participantId}`).emit('new_message', populatedMessage);
+            }
+          });
+        }
       } catch (error) {
         console.error('Socket send_message error:', error.message);
         socket.emit('error', { message: 'Failed to send message' });
