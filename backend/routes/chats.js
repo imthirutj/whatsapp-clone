@@ -74,13 +74,13 @@ router.get('/:id/messages', async (req, res) => {
 // POST /api/chats/:id/messages
 router.post('/:id/messages', async (req, res) => {
   try {
-    const { text } = req.body;
+    const { text, type = 'text' } = req.body;
     if (!text) return res.status(400).json({ message: 'Message text is required' });
 
     const chat = await Chat.findOne({ _id: req.params.id, participants: req.user.userId });
     if (!chat) return res.status(404).json({ message: 'Chat not found or access denied' });
 
-    const message = await Message.create({ chatId: req.params.id, sender: req.user.userId, text });
+    const message = await Message.create({ chatId: req.params.id, sender: req.user.userId, text, type });
 
     // Increment unread count for every participant except sender
     const unreadUpdate = {};

@@ -1,11 +1,16 @@
 import 'dart:async';
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html show FileUploadInputElement, FileReader;
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart' as ep;
 import 'package:flutter/foundation.dart' as foundation;
+import 'package:file_picker/file_picker.dart';
 import '../../models/chat.dart';
 import '../../models/message.dart';
+import '../../services/api_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../constants.dart';
@@ -28,6 +33,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final _focusNode = FocusNode();
   bool _isTypingInternally = false;
   bool _showEmojiPicker = false;
+  bool _isUploadingMedia = false;
   Timer? _typingTimer;
 
   @override
@@ -96,6 +102,82 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       chatProvider.sendTypingStatus(widget.chat.id, false);
       chatProvider.sendLiveTypingText(widget.chat.id, '');
     });
+  }
+
+  Future<void> _pickAndSendImage() async {
+    if (foundation.kIsWeb) {
+      await _pickAndSendImageWeb();
+    } else {
+      await _pickAndSendImageNative();
+    }
+  }
+
+  // Web: use dart:html directly — no plugin registration needed
+  Future<void> _pickAndSendImageWeb() async {
+    final completer = Completer<Uint8List?>();
+    final input = html.FileUploadInputElement()..accept = 'image/*';
+    input.click();
+    input.onChange.listen((_) {
+      final files = input.files;
+      if (files == null || files.isEmpty) { completer.complete(null); return; }
+      final reader = html.FileReader();
+      reader.readAsArrayBuffer(files[0]);
+      reader.onLoad.listen((_) {
+        final result = reader.result;
+        if (result is List<int>) {
+          completer.complete(Uint8List.fromList(result));
+        } else {
+          completer.complete(null);
+        }
+      });
+      reader.onError.listen((_) => completer.complete(null));
+    });
+
+    final bytes = await completer.future;
+    if (bytes == null || !mounted) return;
+
+    await _uploadAndSend(bytes, 'image.jpg');
+  }
+
+  // Native (mobile/desktop): use file_picker
+  Future<void> _pickAndSendImageNative() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        allowMultiple: false,
+        withData: true,
+      );
+      if (result == null || result.files.isEmpty) return;
+      final bytes = result.files.first.bytes;
+      final name = result.files.first.name;
+      if (bytes == null) return;
+      await _uploadAndSend(bytes, name);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
+  Future<void> _uploadAndSend(Uint8List bytes, String filename) async {
+    final chatProvider = context.read<ChatProvider>();
+    final currentUser = context.read<AuthProvider>().currentUser!;
+    setState(() => _isUploadingMedia = true);
+    try {
+      final mediaId = await ApiService().uploadMedia(bytes, filename, 'image/jpeg');
+      await chatProvider.sendMessage(widget.chat.id, mediaId, currentUser, type: 'image');
+      _scrollToBottom(animated: true);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Upload failed: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUploadingMedia = false);
+    }
   }
 
   void _toggleEmojiPicker() {
@@ -314,10 +396,18 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                     onPressed: () {},
                   ),
                   if (!_isTypingInternally)
-                    IconButton(
-                      icon: const Icon(Icons.camera_alt_outlined, color: kOnSurfaceVariant),
-                      onPressed: () {},
-                    ),
+                    _isUploadingMedia
+                        ? const Padding(
+                            padding: EdgeInsets.all(12),
+                            child: SizedBox(
+                              width: 20, height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: kPrimary),
+                            ),
+                          )
+                        : IconButton(
+                            icon: const Icon(Icons.camera_alt_outlined, color: kOnSurfaceVariant),
+                            onPressed: _pickAndSendImage,
+                          ),
                   const SizedBox(width: 4),
                 ],
               ),

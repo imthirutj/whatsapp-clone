@@ -162,7 +162,7 @@ class ChatProvider extends ChangeNotifier {
     }
   }
 
-  Future<Message?> sendMessage(String chatId, String text, User sender) async {
+  Future<Message?> sendMessage(String chatId, String text, User sender, {String type = 'text'}) async {
     // Optimistic: show message instantly before API responds
     final tempId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
     final tempMessage = Message(
@@ -170,7 +170,7 @@ class ChatProvider extends ChangeNotifier {
       chatId: chatId,
       sender: sender,
       text: text,
-      type: 'text',
+      type: type,
       status: 'sent',
       createdAt: DateTime.now(),
     );
@@ -178,7 +178,7 @@ class ChatProvider extends ChangeNotifier {
     _updateChatLastMessage(chatId, tempMessage);
 
     try {
-      final data = await _api.post('/chats/$chatId/messages', {'text': text});
+      final data = await _api.post('/chats/$chatId/messages', {'text': text, 'type': type});
       if (data != null) {
         final msgData = data['message'] ?? data;
         final message = Message.fromJson(msgData as Map<String, dynamic>);

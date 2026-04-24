@@ -10,6 +10,7 @@ const userRoutes = require('./routes/users');
 const chatRoutes = require('./routes/chats');
 const callRoutes = require('./routes/calls');
 const statusRoutes = require('./routes/status');
+const mediaRoutes = require('./routes/media');
 const setupSocket = require('./socket/socketHandler');
 
 const app = express();
@@ -35,6 +36,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/calls', callRoutes);
 app.use('/api/status', statusRoutes);
+app.use('/api/media', mediaRoutes);
 
 // Health check
 app.get('/', (req, res) => {
