@@ -11,6 +11,8 @@ class ChatProvider extends ChangeNotifier {
   String? _currentUserId;
   final Map<String, List<Message>> _messages = {};
   final Map<String, bool> _typingStatus = {};
+  final Map<String, String> _liveTypingText = {};
+  String? _activeChatId;
   bool _isLoading = false;
   bool _isLoadingUsers = false;
   String? _error;
@@ -46,6 +48,9 @@ class ChatProvider extends ChangeNotifier {
     });
     _socket.onMessagesRead((data) {
       if (data is Map<String, dynamic>) _handleMessagesRead(data);
+    });
+    _socket.onLiveTyping((data) {
+      if (data is Map<String, dynamic>) handleLiveTyping(data);
     });
   }
 
@@ -146,21 +151,47 @@ class ChatProvider extends ChangeNotifier {
     }
   }
 
-  Future<Message?> sendMessage(String chatId, String text) async {
+  Future<Message?> sendMessage(String chatId, String text, User sender) async {
+    // Optimistic: show message instantly before API responds
+    final tempId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
+    final tempMessage = Message(
+      id: tempId,
+      chatId: chatId,
+      sender: sender,
+      text: text,
+      type: 'text',
+      status: 'sent',
+      createdAt: DateTime.now(),
+    );
+    _addOrUpdateMessage(chatId, tempMessage);
+    _updateChatLastMessage(chatId, tempMessage);
+
     try {
       final data = await _api.post('/chats/$chatId/messages', {'text': text});
       if (data != null) {
         final msgData = data['message'] ?? data;
         final message = Message.fromJson(msgData as Map<String, dynamic>);
-        _addOrUpdateMessage(chatId, message);
+        _replaceMessage(chatId, tempId, message);
         _updateChatLastMessage(chatId, message);
         return message;
       }
     } catch (e) {
-      // Also try via socket
       _socket.sendMessage(chatId, text);
     }
     return null;
+  }
+
+  void _replaceMessage(String chatId, String tempId, Message realMessage) {
+    final chatMessages = _messages[chatId] ?? [];
+    final index = chatMessages.indexWhere((m) => m.id == tempId);
+    if (index != -1) {
+      final updated = [...chatMessages];
+      updated[index] = realMessage;
+      _messages[chatId] = updated;
+      notifyListeners();
+    } else {
+      _addOrUpdateMessage(chatId, realMessage);
+    }
   }
 
   Future<Chat?> createChat(String participantId) async {
@@ -200,7 +231,25 @@ class ChatProvider extends ChangeNotifier {
 
     try {
       final message = Message.fromJson(data);
+      // Own messages are already added optimistically; skip to avoid duplicates
+      if (message.sender.id == _currentUserId) return;
+
+      // Deduplicate: backend emits to both chat room and user room, so we may
+      // receive the same message twice. Only process side-effects once.
+      final alreadyExists = (_messages[chatId] ?? []).any((m) => m.id == message.id);
       _addOrUpdateMessage(chatId, message);
+      if (alreadyExists) return;
+
+      // If this chat is currently open, mark as read immediately (no badge)
+      if (_activeChatId == chatId) {
+        markChatAsRead(chatId, _currentUserId ?? '');
+        return;
+      }
+
+      // Tell the sender their message was delivered
+      if (message.id.isNotEmpty) {
+        _socket.sendMessageDelivered(message.id, chatId);
+      }
 
       final chatExists = _chats.any((c) => c.id == chatId);
       if (!chatExists) {
@@ -231,6 +280,16 @@ class ChatProvider extends ChangeNotifier {
     final isTyping = data['isTyping'] as bool? ?? false;
     if (chatId == null) return;
     _typingStatus[chatId] = isTyping;
+    if (!isTyping) _liveTypingText[chatId] = '';
+    notifyListeners();
+  }
+
+  void handleLiveTyping(Map<String, dynamic> data) {
+    final chatId = data['chatId']?.toString();
+    final text = data['text']?.toString() ?? '';
+    if (chatId == null) return;
+    _liveTypingText[chatId] = text;
+    _typingStatus[chatId] = text.isNotEmpty;
     notifyListeners();
   }
 
@@ -283,12 +342,28 @@ class ChatProvider extends ChangeNotifier {
     return _typingStatus[chatId] ?? false;
   }
 
+  String getLiveTypingText(String chatId) {
+    return _liveTypingText[chatId] ?? '';
+  }
+
+  void setActiveChat(String chatId) {
+    _activeChatId = chatId;
+  }
+
+  void clearActiveChat() {
+    _activeChatId = null;
+  }
+
   void leaveChat(String chatId) {
     _socket.leaveChat(chatId);
   }
 
   void sendTypingStatus(String chatId, bool isTyping) {
     _socket.sendTyping(chatId, isTyping);
+  }
+
+  void sendLiveTypingText(String chatId, String text) {
+    _socket.sendLiveTyping(chatId, text);
   }
 
   void markMessageRead(String chatId, String messageId) {
@@ -324,6 +399,7 @@ class ChatProvider extends ChangeNotifier {
     _chats = [];
     _messages.clear();
     _typingStatus.clear();
+    _liveTypingText.clear();
     _isLoading = false;
     _error = null;
     notifyListeners();

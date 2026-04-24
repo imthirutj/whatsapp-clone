@@ -107,7 +107,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Welcome back to WhatsApp',
+                          'Welcome back to SchatApp',
                           style: GoogleFonts.inter(
                             fontSize: 14,
                             color: Colors.white.withValues(alpha: 0.85),

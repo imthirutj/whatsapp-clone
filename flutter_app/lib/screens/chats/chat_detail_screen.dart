@@ -43,6 +43,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   void dispose() {
     _typingTimer?.cancel();
     final chatProvider = context.read<ChatProvider>();
+    chatProvider.clearActiveChat();
     chatProvider.leaveChat(widget.chat.id);
     _messageController.dispose();
     _scrollController.dispose();
@@ -51,7 +52,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
   Future<void> _loadMessages() async {
     final chatProvider = context.read<ChatProvider>();
+    final currentUserId = context.read<AuthProvider>().currentUser?.id ?? '';
+    chatProvider.setActiveChat(widget.chat.id);
     await chatProvider.loadMessages(widget.chat.id);
+    await chatProvider.markChatAsRead(widget.chat.id, currentUserId);
     _scrollToBottom();
   }
 
@@ -76,9 +80,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   void _handleTypingStatus(String value) {
     final chatProvider = context.read<ChatProvider>();
     chatProvider.sendTypingStatus(widget.chat.id, true);
+    chatProvider.sendLiveTypingText(widget.chat.id, value);
     _typingTimer?.cancel();
     _typingTimer = Timer(const Duration(seconds: 2), () {
       chatProvider.sendTypingStatus(widget.chat.id, false);
+      chatProvider.sendLiveTypingText(widget.chat.id, '');
     });
   }
 
@@ -87,9 +93,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     if (text.isEmpty) return;
 
     final chatProvider = context.read<ChatProvider>();
+    final currentUser = context.read<AuthProvider>().currentUser!;
     _messageController.clear();
     chatProvider.sendTypingStatus(widget.chat.id, false);
-    await chatProvider.sendMessage(widget.chat.id, text);
+    chatProvider.sendLiveTypingText(widget.chat.id, '');
+    await chatProvider.sendMessage(widget.chat.id, text, currentUser);
     _scrollToBottom(animated: true);
   }
 
@@ -104,6 +112,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         final displayName = widget.chat.displayName(currentUserId);
         final messages = chatProvider.getMessagesForChat(widget.chat.id);
         final isOtherTyping = chatProvider.isTypingInChat(widget.chat.id);
+        final liveTypingText = chatProvider.getLiveTypingText(widget.chat.id);
+        if (liveTypingText.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+        }
 
         return Scaffold(
           backgroundColor: const Color(0xFFEFEAE2), // Matches Image 2 creamy beige
@@ -160,14 +172,18 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                 child: ListView.builder(
                   controller: _scrollController,
                   padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-                  itemCount: messages.length + 1, // +1 for the "Today" separator
+                  itemCount: messages.length + 1 + (liveTypingText.isNotEmpty ? 1 : 0),
                   itemBuilder: (context, index) {
                     if (index == 0) {
-                      return _buildDateSeparator(messages.isNotEmpty 
-                        ? messages[0].createdAt 
+                      return _buildDateSeparator(messages.isNotEmpty
+                        ? messages[0].createdAt
                         : DateTime.now());
                     }
-                    
+
+                    if (liveTypingText.isNotEmpty && index == messages.length + 1) {
+                      return _buildLiveTypingBubble(liveTypingText);
+                    }
+
                     final message = messages[index - 1];
                     final isMe = message.sender.id == currentUserId;
                     bool showTail = true;
@@ -258,6 +274,51 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildLiveTypingBubble(String text) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(left: 8, right: 60, bottom: 2, top: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.85),
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(18),
+            topRight: Radius.circular(18),
+            bottomRight: Radius.circular(18),
+            bottomLeft: Radius.circular(4),
+          ),
+          border: Border.all(color: const Color(0xFF006A4E).withValues(alpha: 0.4), width: 1.2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 2,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Flexible(
+              child: Text(
+                text,
+                style: GoogleFonts.inter(
+                  fontSize: 15,
+                  color: const Color(0xFF111B21).withValues(alpha: 0.6),
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            const Icon(Icons.edit, size: 11, color: Color(0xFF006A4E)),
+          ],
+        ),
       ),
     );
   }

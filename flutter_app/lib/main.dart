@@ -24,7 +24,7 @@ class WhatsAppCloneApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ChatProvider()),
       ],
       child: MaterialApp(
-        title: 'WhatsApp Clone',
+        title: 'SchatApp',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         home: const AppEntryPoint(),
@@ -71,7 +71,7 @@ class _AppEntryPointState extends State<AppEntryPoint> {
               Icon(Icons.chat, color: Colors.white, size: 80),
               SizedBox(height: 24),
               Text(
-                'WhatsApp Clone',
+                'SchatApp',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 24,

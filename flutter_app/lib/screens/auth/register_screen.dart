@@ -108,7 +108,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Join WhatsApp today',
+                            'Join SchatApp today',
                             style: GoogleFonts.inter(
                               fontSize: 14,
                               color: kOnSurfaceVariant,

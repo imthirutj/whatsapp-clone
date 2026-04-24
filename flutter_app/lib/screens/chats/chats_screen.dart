@@ -41,7 +41,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'WhatsApp',
+          'SchatApp',
           style: GoogleFonts.inter(
             fontSize: 22,
             fontWeight: FontWeight.w400,

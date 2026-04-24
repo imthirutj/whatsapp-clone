@@ -19,6 +19,29 @@ const setupSocket = (io) => {
         // Mark user as online in DB
         await User.findByIdAndUpdate(socket.userId, { online: true });
 
+        // Deliver all messages that arrived while user was offline
+        const chats = await Chat.find({ participants: socket.userId }).select('_id');
+        const chatIds = chats.map(c => c._id);
+        const pendingMessages = await Message.find({
+          chatId: { $in: chatIds },
+          sender: { $ne: socket.userId },
+          status: 'sent'
+        }).select('_id chatId');
+
+        if (pendingMessages.length > 0) {
+          await Message.updateMany(
+            { _id: { $in: pendingMessages.map(m => m._id) } },
+            { status: 'delivered' }
+          );
+          for (const msg of pendingMessages) {
+            io.to(`chat_${msg.chatId}`).emit('message_status', {
+              chatId: msg.chatId.toString(),
+              messageId: msg._id.toString(),
+              status: 'delivered'
+            });
+          }
+        }
+
         // Broadcast online status to all other connected clients
         socket.broadcast.emit('user_status', {
           userId: socket.userId,
@@ -92,9 +115,41 @@ const setupSocket = (io) => {
       if (!socket.userId) return;
 
       socket.to(`chat_${chatId}`).emit('typing', {
+        chatId,
         userId: socket.userId,
         isTyping
       });
+    });
+
+    // Live typing — broadcast actual text as user types
+    socket.on('live_typing', ({ chatId, text }) => {
+      if (!socket.userId) return;
+
+      socket.to(`chat_${chatId}`).emit('live_typing', {
+        chatId,
+        userId: socket.userId,
+        text: text ?? ''
+      });
+    });
+
+    // Delivery confirmation — emitted by recipient when they receive a new_message
+    socket.on('message_delivered', async ({ messageId, chatId }) => {
+      if (!socket.userId) return;
+      try {
+        // Only upgrade from 'sent'; never downgrade from 'read'
+        await Message.findOneAndUpdate(
+          { _id: messageId, status: 'sent' },
+          { status: 'delivered' }
+        );
+
+        io.to(`chat_${chatId}`).emit('message_status', {
+          chatId,
+          messageId,
+          status: 'delivered'
+        });
+      } catch (error) {
+        console.error('Socket message_delivered error:', error.message);
+      }
     });
 
     // Mark message as read
@@ -107,8 +162,8 @@ const setupSocket = (io) => {
 
         await Message.findByIdAndUpdate(messageId, { status: 'read' });
 
-        // Notify everyone in the chat room about the status update
         io.to(`chat_${chatId}`).emit('message_status', {
+          chatId,
           messageId,
           status: 'read'
         });

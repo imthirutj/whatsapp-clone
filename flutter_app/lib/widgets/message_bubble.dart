@@ -27,6 +27,7 @@ class MessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final timeStr = _formatTime(message.createdAt);
     final isRead = message.status == 'read';
+    final isDelivered = message.status == 'delivered';
 
     return Padding(
       padding: EdgeInsets.only(
@@ -87,7 +88,7 @@ class MessageBubble extends StatelessWidget {
                     if (isMe) ...[
                       const SizedBox(width: 4),
                       Icon(
-                        isRead ? Icons.done_all : Icons.done,
+                        (isRead || isDelivered) ? Icons.done_all : Icons.done,
                         size: 16,
                         color: isRead
                             ? const Color(0xFF53BDEB)

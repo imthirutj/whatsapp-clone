@@ -57,6 +57,14 @@ class SocketService {
     _socket?.emit('typing', {'chatId': chatId, 'isTyping': isTyping});
   }
 
+  void sendLiveTyping(String chatId, String text) {
+    _socket?.emit('live_typing', {'chatId': chatId, 'text': text});
+  }
+
+  void sendMessageDelivered(String messageId, String chatId) {
+    _socket?.emit('message_delivered', {'messageId': messageId, 'chatId': chatId});
+  }
+
   void markRead(String chatId, String messageId) {
     _socket?.emit('message_read', {'chatId': chatId, 'messageId': messageId});
   }
@@ -75,6 +83,14 @@ class SocketService {
 
   void offTyping() {
     _socket?.off('typing');
+  }
+
+  void onLiveTyping(Function(dynamic) callback) {
+    _socket?.on('live_typing', callback);
+  }
+
+  void offLiveTyping() {
+    _socket?.off('live_typing');
   }
 
   void onMessageStatus(Function(dynamic) callback) {
